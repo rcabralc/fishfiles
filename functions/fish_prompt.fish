@@ -23,7 +23,9 @@ function fish_prompt
     if test $fish_bind_mode != ''
         switch $fish_bind_mode
             case 'insert'
-                set_color $monokai_lime -o
+                set_color $monokai_white -o
+            case 'visual'
+                set_color $monokai_magenta -o
         end
     end
     printf ": "
