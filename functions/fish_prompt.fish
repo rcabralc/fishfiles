@@ -29,6 +29,7 @@ function fish_prompt
                 set_color $monokai_magenta -o
         end
     end
+    printf "%% "
 
     set_color normal
 end
