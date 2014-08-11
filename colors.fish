@@ -15,7 +15,7 @@ set -Ux monokai_magenta   f92672
 set fish_color_normal                    $monokai_white
 
 # the color for commands
-set fish_color_command                   $monokai_lime -o
+set fish_color_command                   $monokai_lime
 
 # the color for quoted blocks of text
 set fish_color_quote                     $monokai_yellow
@@ -29,7 +29,7 @@ set fish_color_end                       $monokai_magenta
 
 # the color used to highlight potential
 # errors
-set fish_color_error                     $monokai_magenta -o
+set fish_color_error                     $monokai_magenta
 
 # the color for regular command
 # parameters
