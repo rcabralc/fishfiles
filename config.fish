@@ -1,3 +1,5 @@
+set -gx DEFAULT_USER "rcabralc"
+
 source ~/.config/fish/colors.fish
 
 # Fish git prompt
@@ -36,8 +38,8 @@ set __fish_git_prompt_color_cleanstate $monokai_lime -o
 
 # Basic environment vars
 set PATH ~/.local/bin ~/.rbenv/bin ~/.gem/ruby/2.1.0/bin ~/bin $PATH
-set -Ux EDITOR "gvim --nofork"
-set -gx LESS=FRSX
+set -gx EDITOR "gvim --nofork"
+set -gx LESS=FRX
 
 
 # SSH key management.  Using keychain to add the keys to start the agent and

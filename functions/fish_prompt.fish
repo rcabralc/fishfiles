@@ -1,13 +1,15 @@
 function fish_prompt
     set last_status $status
 
-    set_color $monokai_orange
-    printf '%s' (echo $USER)
-    set_color normal
+    if test $USER != $DEFAULT_USER
+        set_color $monokai_orange
+        printf '%s' (echo $USER)
+        set_color normal
 
-    set_color $monokai_white
-    printf '@%s' (hostname)
-    set_color normal
+        set_color $monokai_white
+        printf "@%s:" (hostname)
+        set_color normal
+    end
 
     set_color $fish_color_cwd
     printf '%s' (prompt_pwd)
@@ -29,7 +31,7 @@ function fish_prompt
                 set_color $monokai_magenta -o
         end
     end
-    printf "%% "
+    printf " \$ "
 
     set_color normal
 end
