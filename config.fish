@@ -69,3 +69,9 @@ if status --is-interactive
         end
     end
 end
+
+# More configuration is placed in site/
+mkdir -p ~/.config/fish/site
+for f in (ls ~/.config/fish/site/*.fish)
+    source $f
+end
