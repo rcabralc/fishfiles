@@ -9,7 +9,7 @@ set __fish_git_prompt_showuntrackedfiles 'yes'
 set __fish_git_prompt_showupstream 'yes'
 set __fish_git_prompt_show_informative_status 'yes'
 
-set __fish_git_prompt_color_branch $monokai_cyan
+set __fish_git_prompt_color_branch $monokai_lightgray
 set __fish_git_prompt_char_stateseparator ''
 
 set __fish_git_prompt_char_dirtystate '+'
@@ -25,7 +25,7 @@ set __fish_git_prompt_char_stashstate '$'
 set __fish_git_prompt_color_stashstate $monokai_orange -o
 
 set __fish_git_prompt_char_untrackedfiles '…'
-set __fish_git_prompt_color_untrackedfiles $monokai_purple
+set __fish_git_prompt_color_untrackedfiles $monokai_cyan
 
 set __fish_git_prompt_char_upstream_equal '='
 set __fish_git_prompt_char_upstream_behind '<'
