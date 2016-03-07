@@ -1,6 +1,6 @@
 set -gx DEFAULT_USER "rcabralc"
 
-source ~/.config/fish/colors.fish
+source ./colors.fish
 
 # Fish git prompt
 set __fish_git_prompt_showdirtystate 'yes'
@@ -35,6 +35,12 @@ set __fish_git_prompt_char_upstream_diverged '<>'
 set __fish_git_prompt_char_cleanstate ''
 set __fish_git_prompt_color_cleanstate green -o
 
+# Install rbenv
+if test ! -d ~/.rbenv
+    git clone https://github.com/rbenv/rbenv.git ~/.rbenv
+    cd ~/.rbenv; and src/configure; and make -C src 2>/dev/null
+end
+
 # Basic environment vars
 set -gx GOPATH ~/go
 set PATH ~/.local/bin ~/.rbenv/bin ~/bin ~/go/bin $PATH
@@ -43,8 +49,7 @@ set -gx LESS FRX
 
 set fish_key_bindings fish_user_key_bindings
 
-# rbenv (must have its bin directory in PATH)
-status --is-interactive; and . (rbenv init - | psub)
+status --is-interactive; and . (~/.rbenv/bin/rbenv init - | psub)
 
 if status --is-interactive
     # This askpass program uses pass (which uses GPG) to get passwords.
