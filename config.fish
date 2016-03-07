@@ -61,7 +61,9 @@ if status --is-interactive
     keychain --eval --agents ssh -Q --quiet ~/.ssh/id_ecdsa ~/.ssh/id_rsa | source
 end
 
-eval (direnv hook fish)
+if which direnv >/dev/null 2>/dev/null
+  eval (direnv hook fish)
+end
 
 # More configuration is placed in site/
 mkdir -p ~/.config/fish/site
