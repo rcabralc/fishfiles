@@ -3,11 +3,11 @@ function fish_prompt
     set pwd (prompt_pwd)
 
     if test $USER != $DEFAULT_USER
-        set_color $monokai_orange
+        set_color brown
         printf '%s' (echo $USER)
         set_color normal
 
-        set_color $monokai_white
+        set_color normal
         printf "@%s:" (hostname)
         set_color normal
     end
@@ -22,17 +22,17 @@ function fish_prompt
 
     set_color normal
     if test $last_status -ne 0
-        set_color $monokai_orange
+        set_color brown
         printf "[$last_status] "
     end
 
-    set_color $monokai_lightgray -o
+    set_color grey
     if test $fish_bind_mode != ''
         switch $fish_bind_mode
-            case 'insert'
-                set_color $monokai_white -o
-            case 'visual'
-                set_color $monokai_magenta -o
+        case 'insert'
+            set_color normal -o
+        case 'visual'
+            set_color red -o
         end
     end
     printf "\$ "

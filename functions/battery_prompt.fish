@@ -21,11 +21,11 @@ function battery_prompt
         set -l b (battery_pct_remaining)
 
         if test $b -gt 50
-            set color $monokai_lime
+            set color green
         else if test $b -gt 20
-            set color $monokai_orange
+            set color brown
         else
-            set color $monokai_magenta
+            set color red
         end
 
         set_color $color
@@ -33,10 +33,10 @@ function battery_prompt
     else if battery_is_charging
         set -l b (battery_pct_remaining)
 
-        set_color $monokai_lime
+        set_color green
         printf "$b%%"
     else
-        set_color $monokai_lime
+        set_color green
         printf "AC"
     end
 

@@ -1,61 +1,104 @@
 function fish_user_key_bindings
     fish_vi_key_bindings
 
-    bind -M insert \ef accept-autosuggestion
-    bind -M insert \ej accept-autosuggestion execute
+    set -l next_word_start '(?<=[^\w])\w|.$'
+    set -l prev_word_start '(?<=[^\w])\w|^.'
+    set -l next_word_end   '(?<=.)\w(?=[^\w])|.$'
+    set -l prev_word_end   '(?<=.)\w(?=[^\w])|^.'
 
-    function vi-forward
+    set -l next_bigword_start '(?<=\s)[^\s]|.$'
+    set -l prev_bigword_start '(?<=\s)[^\s]|^.'
+    set -l next_bigword_end   '(?<=.)[^\s](?=\s)|.$'
+    set -l prev_bigword_end   '(?<=.)[^\s](?=\s)|^.'
+
+    function __vi_forward_position
         set cur_pos (commandline -C)
-        set cmd (commandline | cut -b (math $cur_pos + 1)-)
-        set offset (echo $cmd | grep --color=never -m1 -o -b -P "$argv[1]" | head -n1 | cut -d: -f1)
+        set cmd (commandline -b | cut -b (math $cur_pos + 1)-)
+        set offset (echo $cmd | grep -m1 -o -b -P "$argv[1]" | head -n1 | cut -d: -f1)
         if test -z $offset
-            return
+            set offset 0
         end
-        commandline -C (math $cur_pos + $offset)
+        printf (math $cur_pos + $offset)
     end
 
-    function vi-backward
+    function __vi_backward_position
         set cur_pos (commandline -C)
         if test $cur_pos -eq 0
+            printf 0
             return
         end
         # exclude current character.
-        set cmd (commandline | cut -b -(math $cur_pos))
-        set new_pos (echo $cmd | grep --color=never -o -b -P "$argv[1]" | tail -n1 | cut -d: -f1)
+        set cmd (commandline -b | cut -b -(math $cur_pos))
+        set new_pos (echo $cmd | grep -o -b -P "$argv[1]" | tail -n1 | cut -d: -f1)
         if test -z $new_pos
-            return
+            set new_pos 0
         end
-        commandline -C $new_pos
+        printf $new_pos
     end
 
-    function vi-next-word
-        vi-forward "(?<=[^\w])\w|.\$"
+    function __vi_forward
+        commandline -C (__vi_forward_position $argv[1])
     end
 
-    function vi-prev-word
-        vi-backward "(?<=[^\w])\w|^."
+    function __vi_backward
+        commandline -C (__vi_backward_position $argv[1])
     end
 
-    function vi-next-big-word
-        vi-forward "(?<=\s)[^\s]|.\$"
+    function __vi_kill_forward
+        set cur_pos (commandline -C)
+        set final_pos (__vi_forward_position $argv[1])
+
+        if test (count $argv) -gt 1
+            set final_pos (math $final_pos + $argv[2])
+        end
+
+        if test $cur_pos -eq 0
+            set before ""
+        else
+            set before (commandline | cut -b -(math $cur_pos))
+        end
+
+        set after (commandline | cut -b (math $final_pos + 1)-)
+        commandline -r "$before$after"
+        commandline -C $cur_pos
+        commandline -f repaint
     end
 
-    function vi-prev-big-word
-        vi-backward "(?<=\s)[^\s]|^."
+    function __vi_kill_backward
+        set cur_pos (commandline -C)
+        set final_pos (__vi_backward_position $argv[1])
+
+        if test $cur_pos -eq 0
+            set before ""
+        else
+            set before (commandline | cut -b (math $cur_pos)-)
+        end
+
+        set after (commandline | cut -b -(math $final_pos + 1))
+        commandline -r "$before$after"
+        commandline -C $final_pos
+        commandline -f repaint
     end
 
-    function vi-word-end
-        vi-forward "(?<=.)\w(?=[^\w])|.\$"
-    end
+    bind w  "__vi_forward  '$next_word_start'"
+    bind b  "__vi_backward '$prev_word_start'"
+    bind e  "__vi_forward  '$next_word_end'"
+    bind ge "__vi_backward '$prev_word_end'"
 
-    function vi-big-word-end
-        vi-forward "(?<=.)[^\s](?=\s)|.\$"
-    end
+    bind W  "__vi_forward  '$next_bigword_start'"
+    bind B  "__vi_backward '$prev_bigword_start'"
+    bind E  "__vi_forward  '$next_bigword_end'"
+    bind gE "__vi_backward '$prev_bigword_end'"
 
-    bind w vi-next-word
-    bind b vi-prev-word
-    bind e vi-word-end
-    bind W vi-next-big-word
-    bind B vi-prev-big-word
-    bind E vi-big-word-end
+    bind dw "__vi_kill_forward '$next_word_start'"
+    bind de "__vi_kill_forward '$next_word_end' 1"
+    bind dW "__vi_kill_forward '$next_bigword_start'"
+    bind dE "__vi_kill_forward '$next_bigword_end' 1"
+
+    bind -m insert cw "__vi_kill_forward '$next_word_end' 1"
+    bind -m insert ce "__vi_kill_forward '$next_word_end' 1"
+
+    bind -M insert \cf forward-word
+    bind -M insert \cl accept-autosuggestion
+    bind -M insert \cj accept-autosuggestion end-of-line execute
 end

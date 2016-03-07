@@ -1,14 +1,16 @@
 function fish_right_prompt
     if test (rbenv version-name) != 'system'
-        set_color $monokai_lightgray -o
+        set_color grey
         printf '%s ' (rbenv version-name)
         set_color normal
     end
 
-    set_color $monokai_yellow
+    set_color bryellow
     printf '%s ' (date "+%d/%m")
-    set_color $monokai_orange
+    set_color normal
+    set_color brown
     printf '%s ' (date "+%Hh%M")
-    set_color $monokai_magenta
+    set_color normal
+    set_color red
     printf '⚡%s ' (battery_prompt)
 end
