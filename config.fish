@@ -47,11 +47,12 @@ set fish_key_bindings fish_user_key_bindings
 status --is-interactive; and . (rbenv init - | psub)
 
 if status --is-interactive
+    # This askpass program uses pass (which uses GPG) to get passwords.
     set -gx SSH_ASKPASS ~/.local/bin/askpass
     # SSH key management.  Using keychain to add the keys to start the agent
     # and add the keys.  If the agent already has been started, keychain does
     # nothing but returning success.  At this point, SSH_ASKPASS should already
-    # be set to the askpass app (ksshaskpass if logged in through KDE).
+    # be set to the askpass app.
     keychain --eval --agents ssh -Q --quiet ~/.ssh/id_ecdsa ~/.ssh/id_rsa | source
 end
 
