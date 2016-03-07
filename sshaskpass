@@ -1,0 +1,22 @@
+#!/usr/bin/fish
+
+set key (echo $argv[1] | sed -r "s/.*\/([^'\"]*)['\"]?:\s*\$/\1/g")
+set password (pass "ssh/$key" | head -n 1)
+
+if test -z $password
+    set error_title "Not found"
+    set error_message "Passphrase for $key not found in password store."
+
+    if which kdialog >/dev/null 2>/dev/null
+        kdialog --title="$error_title" --error "$error_message"
+    else
+        if which zenity >/dev/null 2>/dev/null
+            zenity --error --title="$error_title" --text="$error_message"
+        end
+    end
+
+    exit 1
+end
+
+echo $password
+exit 0
