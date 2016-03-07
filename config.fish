@@ -71,4 +71,8 @@ for f in (ls ~/.config/fish/site/*.fish)
     source $f
 end
 
+if test -z $SHELL
+  set -gx SHELL (which fish)
+end
+
 cd $HOME
