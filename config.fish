@@ -1,6 +1,6 @@
 set -gx DEFAULT_USER "rcabralc"
 
-source ./colors.fish
+source ~/.config/fish/colors.fish
 
 # Fish git prompt
 set __fish_git_prompt_showdirtystate 'yes'
