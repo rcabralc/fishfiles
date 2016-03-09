@@ -19,7 +19,10 @@ function fish_right_prompt
     printf '%s ' (date "+%Hh%M")
     set_color normal
 
-    set_color red
-    printf '⚡%s' (battery_prompt)
-    set_color normal
+    set batteryprompt (battery_prompt)
+    if test $status -eq 0
+        set_color red
+        printf '⚡%s' $batteryprompt
+        set_color normal
+    end
 end
