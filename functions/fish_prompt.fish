@@ -2,7 +2,9 @@ function fish_prompt
     set last_status $status
     set pwd (prompt_pwd)
     set host (hostname)
+    set git ""
     set sep ""
+    set pathprefix ""
 
     if test $USER != $DEFAULT_USER
         set_color brown
@@ -16,18 +18,18 @@ function fish_prompt
         printf "@%s" (hostname)
         set_color normal
         set sep " "
+        set pathprefix ":"
     end
 
     if test $pwd != '~'
         set_color $fish_color_cwd
-        printf ":%s" $pwd
+        printf "%s%s" $pathprefix $pwd
         set_color normal
         set sep " "
     end
 
-    set git (__fish_git_prompt "%s")
-    if test $git != ''
-        printf " %s" $git
+    if git rev-parse --show-toplevel 2>/dev/null 1>/dev/null
+        printf " %s" (__fish_git_prompt "%s")
         set sep " "
     end
 
