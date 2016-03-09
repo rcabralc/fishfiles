@@ -75,5 +75,3 @@ end
 if test -z $SHELL
   set -gx SHELL (which fish)
 end
-
-cd $HOME
