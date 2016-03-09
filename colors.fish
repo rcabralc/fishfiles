@@ -1,6 +1,7 @@
 if test $TERM = 'linux'
     vim +'redir! > /tmp/colors | silent! call rcabralc#print_colors(rcabralc#palette) | redir END | qall!'
     cat /tmp/colors | \
+        grep -e . | \
         head -n 16 | \
         sed -n 's/\([0-9]\{1,\}\)\s#\([a-fA-F0-9]\{6\}\)/\1 \2/p' | \
         awk '$1 < 16 { printf "\033]P%X%s", $1, $2 }'
