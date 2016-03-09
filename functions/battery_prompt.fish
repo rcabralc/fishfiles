@@ -17,6 +17,11 @@ function battery_prompt
         echo (acpi | cut -f3 -d ',')
     end
 
+    which acpi
+    if test $status -ne 0
+        return $status
+    end
+
     if battery_is_discharging
         set -l b (battery_pct_remaining)
 
