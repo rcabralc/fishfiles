@@ -17,7 +17,7 @@ function battery_prompt
         echo (acpi | cut -f3 -d ',')
     end
 
-    which acpi
+    which acpi >/dev/null
     if test $status -ne 0
         return 1
     end
