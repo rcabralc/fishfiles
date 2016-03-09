@@ -19,7 +19,7 @@ function battery_prompt
 
     which acpi
     if test $status -ne 0
-        return $status
+        return 1
     end
 
     if battery_is_discharging
