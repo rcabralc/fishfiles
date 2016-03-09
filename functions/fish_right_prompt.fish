@@ -5,12 +5,12 @@ function fish_right_prompt
     if test $status -eq 0
         if test $rubyversion != 'system'
             set_color grey
-            printf '%s ' $rubyversion
+            printf "%s" $rubyversion
             set sep " "
         end
     else
         set_color -o red
-        printf 'bad Ruby '
+        printf "bad Ruby"
         set sep " "
     end
     set_color normal
