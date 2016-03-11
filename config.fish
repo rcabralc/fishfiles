@@ -45,7 +45,7 @@ end
 # Basic environment vars
 set -gx GOPATH ~/go
 set PATH ~/.local/bin ~/.rbenv/bin ~/bin ~/go/bin $PATH
-set -gx EDITOR "gvim --nofork"
+set -gx EDITOR nvim
 set -gx LESS FRX
 
 set fish_key_bindings fish_user_key_bindings
