@@ -5,7 +5,7 @@ function nvim --wraps=nvim
         if test -z $argv
             nvr -c new
         else
-            nvr $argv
+            nvr -c edit $argv
         end
     end
 end
