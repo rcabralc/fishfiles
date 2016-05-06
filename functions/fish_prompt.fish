@@ -40,16 +40,20 @@ function fish_prompt
         set sep " "
     end
 
-    set_color grey
+    set_color normal
+    printf "%s" $sep
     if test $fish_bind_mode != ''
         switch $fish_bind_mode
-        case 'insert'
-            set_color -o normal
-        case 'visual'
-            set_color -o brred
+            case default
+                set_color --bold brred
+            case insert
+                set_color --bold brgreen
+            case visual
+                set_color --bold brmagenta
         end
     end
-    printf "%s\$ " $sep
+    printf "\$"
 
     set_color normal
+    printf " "
 end
