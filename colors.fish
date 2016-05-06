@@ -20,7 +20,7 @@ set fish_color_command                          green
 set fish_color_quote                            bryellow
 
 # the color for IO redirections
-set fish_color_redirection                      red
+set fish_color_redirection                      brred
 
 # the color for process separators like
 # ';' and '&'
@@ -28,7 +28,7 @@ set fish_color_end                              red
 
 # the color used to highlight potential
 # errors
-set fish_color_error                            red -o
+set fish_color_error                         -o red
 
 # the color for regular command
 # parameters
@@ -62,7 +62,7 @@ set fish_color_cwd_root                         red
 # Others
 set fish_color_autosuggestion                   grey
 set fish_color_user                             green
-set fish_color_host                             cyan -o
+set fish_color_host                          -o cyan
 set fish_color_status                           red
 
 # Additionally, the following variables
