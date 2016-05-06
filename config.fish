@@ -62,6 +62,9 @@ if status --is-interactive
     keychain --eval --agents ssh -Q --quiet ~/.ssh/id_ecdsa ~/.ssh/id_rsa | source
 end
 
+fish_vi_cursor auto
+set -g fish_cursor_insert line blink
+
 if which direnv >/dev/null 2>/dev/null
   eval (direnv hook fish)
 end
