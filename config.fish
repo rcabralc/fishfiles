@@ -1,5 +1,6 @@
 set -gx DEFAULT_USER "rcabralc"
 set -gx DEFAULT_HOST "atrocious"
+set -e fish_greeting
 
 source ~/.config/fish/colors.fish
 
