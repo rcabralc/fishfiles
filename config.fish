@@ -85,6 +85,4 @@ for f in ~/.config/fish/site/*.fish
     source $f
 end
 
-if test -z $SHELL
-  set -gx SHELL (command -v fish)
-end
+set -gx SHELL (command -v fish)
