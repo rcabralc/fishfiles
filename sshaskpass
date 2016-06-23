@@ -1,22 +1,23 @@
-#!/usr/bin/fish
+#!/bin/sh
 
-set key (echo $argv[1] | sed -r "s/.*\/([^'\"]*)['\"]?:\s*\$/\1/g")
-set password (pass "ssh/$key" | head -n 1)
+# This script is written in posix shell to avoid triggering an infinite
+# recursion in fish.  Another solution could be to write this in fish but only
+# add keys to ssh-agent when the shell is in interactive mode.
 
-if test -z $password
-    set error_title "Not found"
-    set error_message "Passphrase for $key not found in password store."
+set -e
 
-    if which kdialog >/dev/null 2>/dev/null
-        kdialog --title="$error_title" --error "$error_message"
-    else
-        if which zenity >/dev/null 2>/dev/null
-            zenity --error --title="$error_title" --text="$error_message"
-        end
-    end
+prompt=$1
+key=$(echo $prompt | sed -r "s/.*\/([^'\"]*)['\"]?:\s*\$/\1/g")
+password=$(pass "ssh/$key" 2>/dev/null | head -n 1)
 
-    exit 1
-end
+[ ! -z $password ] && echo $password && exit 0
 
-echo $password
-exit 0
+title="Not found"
+message="Passphrase for $key not found in password store."
+if command -v kdialog >/dev/null 2>&1; then
+  kdialog --title "$title" --error "$message"
+elif command -v zenity >/dev/null 2>&1; then
+  zenity --error --title "$title" --text "$message"
+fi
+
+exit 1
