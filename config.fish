@@ -75,7 +75,7 @@ end
 fish_vi_cursor auto
 set -g fish_cursor_insert line blink
 
-if which direnv >/dev/null 2>/dev/null
+if command -v direnv >/dev/null
   eval (direnv hook fish)
 end
 
@@ -86,5 +86,5 @@ for f in ~/.config/fish/site/*.fish
 end
 
 if test -z $SHELL
-  set -gx SHELL (which fish)
+  set -gx SHELL (command -v fish)
 end
