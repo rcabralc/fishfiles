@@ -43,8 +43,11 @@ if test ! -d ~/.rbenv
 end
 
 # Basic environment vars
-set -gx GOPATH ~/go
-set PATH ~/.local/bin ~/.rbenv/bin ~/bin ~/go/bin $PATH
+if test -d ~/go
+  set -gx GOPATH ~/go
+  set PATH ~/go/bin $PATH
+end
+set PATH ~/.local/bin ~/.rbenv/bin $PATH
 set -gx EDITOR nvim
 set -gx LESS FRX
 
