@@ -47,6 +47,13 @@ if test -d ~/go
   set -gx GOPATH ~/go
   set PATH ~/go/bin $PATH
 end
+
+if command -v brew >/dev/null
+  set PATH "$HOME/.linuxbrew/bin" $PATH
+  set MANPATH "$HOME/.linuxbrew/share/man" $MANPATH
+  set INFOPATH "$HOME/.linuxbrew/share/info" $INFOPATH
+end
+
 set PATH ~/.local/bin ~/.rbenv/bin $PATH
 set -gx EDITOR nvim
 set -gx LESS FRX
