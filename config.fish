@@ -90,6 +90,6 @@ end
 
 # More configuration is placed in site/
 mkdir -p ~/.config/fish/site
-for f in ~/.config/fish/site/*.fish
+for f in (find ~/.config/fish/site/ -type f -name '*.fish' | sort)
     source $f
 end
