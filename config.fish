@@ -69,12 +69,6 @@ if command -v direnv >/dev/null
   eval (direnv hook fish)
 end
 
-# More configuration is placed in site/
-mkdir -p ~/.config/fish/site
-for f in ~/.config/fish/site/*.fish
-    source $f
-end
-
 set -gx SHELL (command -v fish)
 
 # SSH key management.
@@ -88,8 +82,14 @@ if test $status -eq 0
   keychain --eval --agents ssh -Q --quiet | source
 
   # This askpass program uses pass (which uses GPG) to get passwords.
-  set SSH_ASKPASS ~/.local/bin/askpass
+  set -gx SSH_ASKPASS ~/.local/bin/askpass
 
   # Finally add the keys.
   ssh-add </dev/null 2>/dev/null
+end
+
+# More configuration is placed in site/
+mkdir -p ~/.config/fish/site
+for f in ~/.config/fish/site/*.fish
+    source $f
 end
