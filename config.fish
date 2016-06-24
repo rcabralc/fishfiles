@@ -49,7 +49,7 @@ test ! -d ~/go; and mkdir -p $HOME/go/bin
 set -gx GOPATH ~/go
 set PATH ~/go/bin $PATH
 
-if command -v brew >/dev/null
+if test -x "$HOME/.linuxbrew/bin" >/dev/null
   set PATH "$HOME/.linuxbrew/bin" $PATH
   set MANPATH "$HOME/.linuxbrew/share/man" $MANPATH
   set INFOPATH "$HOME/.linuxbrew/share/info" $INFOPATH
