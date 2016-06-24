@@ -44,10 +44,10 @@ if test ! -d ~/.rbenv
 end
 
 # Basic environment vars
-if test -d ~/go
-  set -gx GOPATH ~/go
-  set PATH ~/go/bin $PATH
-end
+
+test ! -d ~/go; and mkdir -p $HOME/go/bin
+set -gx GOPATH ~/go
+set PATH ~/go/bin $PATH
 
 if command -v brew >/dev/null
   set PATH "$HOME/.linuxbrew/bin" $PATH
