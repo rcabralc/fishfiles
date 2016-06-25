@@ -77,16 +77,13 @@ test -f ~/.local/bin/askpass; and \
   command -v pass >/dev/null; and \
   command -v keychain >/dev/null
 if test $status -eq 0
-  # SSH key management.  Using keychain to add the keys to start the agent
-  # and add the keys.  If the agent already has been started, keychain does
-  # nothing but returning success.
-  keychain --eval --agents ssh -Q --quiet | source
-
   # This askpass program uses pass (which uses GPG) to get passwords.
   set -gx SSH_ASKPASS ~/.local/bin/askpass
 
-  # Finally add the keys.
-  ssh-add </dev/null 2>/dev/null
+  # SSH key management.  Using keychain to add the keys to start the agent
+  # and add the keys.  If the agent already has been started, keychain does
+  # nothing but returning success (but adds the requested keys).
+  keychain --eval --agents ssh -Q --quiet id_rsa id_ecdsa | source
 end
 
 # More configuration is placed in site/
