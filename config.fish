@@ -75,7 +75,8 @@ set -gx SHELL (command -v fish)
 # SSH key management.
 test -f ~/.local/bin/askpass; and \
   command -v pass >/dev/null; and \
-  command -v keychain >/dev/null
+  command -v keychain >/dev/null; and \
+  status --is-interactive
 if test $status -eq 0
   # This askpass program uses pass (which uses GPG) to get passwords.
   set -gx SSH_ASKPASS ~/.local/bin/askpass
