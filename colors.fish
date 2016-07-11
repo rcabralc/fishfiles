@@ -1,5 +1,5 @@
 if test $TERM = 'linux'
-    vim +'redir! > /tmp/colors | silent! call rcabralc#print_colors(rcabralc#palette) | redir END | qall!'
+    nvim +'redir! > /tmp/colors | silent! call rcabralc#print_colors(rcabralc#palette) | redir END | qall!'
     cat /tmp/colors | \
         grep -e . | \
         head -n 16 | \
