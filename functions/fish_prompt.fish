@@ -8,14 +8,14 @@ function fish_prompt
 
     if test $USER != $DEFAULT_USER
         set_color brown
-        printf "%s" (echo $USER)
+        printf "%s" $USER
         set_color normal
         set sep " "
     end
 
     if test $host != $DEFAULT_HOST
         set_color brcyan
-        printf "@%s" (hostname)
+        printf "@%s" $host
         set_color normal
         set sep " "
         set pathprefix ":"
