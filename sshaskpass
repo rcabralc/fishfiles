@@ -7,7 +7,7 @@
 set -e
 
 prompt=$1
-key=$(echo $prompt | sed -r "s/.*\/([^'\"]*)['\"]?:\s*\$/\1/g")
+key=$(echo $prompt | sed -r "s/.*\/([^'\":]*)['\"]?:?\s*\$/\1/g")
 password=$(pass "ssh/$key" 2>/dev/null | head -n 1)
 
 [ ! -z $password ] && echo $password && exit 0
