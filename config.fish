@@ -41,6 +41,7 @@ set __fish_git_prompt_color_cleanstate green -o
 if test ! -d ~/.rbenv
     git clone https://github.com/rbenv/rbenv.git ~/.rbenv
     cd ~/.rbenv; and src/configure; and make -C src 2>/dev/null
+    git clone https://github.com/rbenv/ruby-build.git ~/.rbenv/plugins/ruby-build
 end
 
 # Basic environment vars
