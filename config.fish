@@ -61,11 +61,10 @@ set -gx EDITOR nvim
 set -gx LESS FRX
 
 set fish_key_bindings fish_user_key_bindings
-
-status --is-interactive; and . (~/.rbenv/bin/rbenv init - | psub)
-
 fish_vi_cursor auto
 set -g fish_cursor_insert line blink
+
+status --is-interactive; and . (~/.rbenv/bin/rbenv init - | psub)
 
 if command -v direnv >/dev/null
   eval (direnv hook fish)
