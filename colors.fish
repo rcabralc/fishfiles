@@ -83,3 +83,12 @@ set fish_pager_color_description                grey
 # the color of the progress bar at the
 # bottom left corner
 set fish_pager_color_progress                   cyan
+
+# `less' colors
+set -gx LESS_TERMCAP_mb (printf '\e[1;31m')       # start blinking
+set -gx LESS_TERMCAP_md (printf '\e[1;31m')       # start bold
+set -gx LESS_TERMCAP_so (printf '\e[48;5;11;30m') # start standout-mode - info box
+set -gx LESS_TERMCAP_us (printf '\e[1;32m')       # start underline
+set -gx LESS_TERMCAP_me (printf '\e[0m')          # end mode
+set -gx LESS_TERMCAP_se (printf '\e[0m')          # end standout-mode
+set -gx LESS_TERMCAP_ue (printf '\e[0m')          # end underline
