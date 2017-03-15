@@ -1,4 +1,4 @@
-if test $TERM = 'linux'
+if test "$TERM" = 'linux'
     nvim +'redir! > /tmp/colors | silent! call rcabralc#print_colors(rcabralc#palette) | redir END | qall!'
     cat /tmp/colors | \
         grep -e . | \
