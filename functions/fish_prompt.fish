@@ -7,14 +7,14 @@ function fish_prompt
     set pathprefix ""
 
     if test $USER != $DEFAULT_USER
-        set_color brown
+        set_color $fish_color_user
         printf "%s" $USER
         set_color normal
         set sep " "
     end
 
     if test $host != $DEFAULT_HOST
-        set_color brcyan
+        set_color $fish_color_host
         printf "@%s" $host
         set_color normal
         set sep " "
@@ -45,7 +45,7 @@ function fish_prompt
     if test $fish_bind_mode != ''
         switch $fish_bind_mode
             case default
-                set_color --bold brred
+                set_color brown
             case insert
                 set_color --bold brgreen
             case visual
