@@ -46,9 +46,18 @@ end
 
 # Basic environment vars
 
-test ! -d ~/go; and mkdir -p $HOME/go/bin
-set -gx GOPATH ~/go
-set PATH ~/go/bin $PATH
+if test -x "$HOME/go/bin" >/dev/null
+  set -gx GOPATH ~/go
+  set PATH ~/go/bin $PATH
+end
+
+if test -x "$HOME/.npm/bin" >/dev/null
+  set PATH "$HOME/.npm/bin" $PATH
+end
+
+if test -x "$HOME/.cargo/bin" >/dev/null
+  set PATH "$HOME/.cargo/bin" $PATH
+end
 
 if test -x "$HOME/.linuxbrew/bin" >/dev/null
   set PATH "$HOME/.linuxbrew/bin" $PATH
