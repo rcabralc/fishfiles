@@ -3,3 +3,5 @@ generated_completions/*
 fish_history
 fishd.*
 *.swp
+**/__pycache__/*
+**/pickout/history.json

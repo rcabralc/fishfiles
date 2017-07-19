@@ -1,0 +1,24 @@
+#!/usr/bin/fish
+
+command -v pickout >/dev/null; and command -v xdotool >/dev/null
+test $status -ne 0; and exit 1
+
+set item (
+  pass git ls-files "**.gpg" | \
+    grep -v '^totp/' | \
+    sed 's/\.gpg$//' | \
+    sort | \
+    pickout --daemonize --history password --title 'Select password...' \
+    2>/dev/null
+)
+
+test -z $item; and exit 1
+
+set password (pass show $item | head -n 1)
+xdotool type --clearmodifiers "$password"
+
+if type -q kdialog
+  kdialog --title="Password" --msgbox="Entered password for $item."
+else
+  zenity --title="Password" --text="Entered password for $item." --info
+end

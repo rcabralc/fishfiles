@@ -1,0 +1,17 @@
+#!/usr/bin/ruby
+
+require 'rubygems'
+require 'rotp'
+
+files = `pass git ls-files totp/`.chomp.split("\n")
+options = files.map { |f| f.gsub(/^totp\//, '').gsub(/\.gpg$/, '') }
+secret_name = `
+  echo "#{options.sort.join("\n")}" |
+    ~/.config/fish/lib/pickout/pickout --daemonize --history totp --title 'Select TOTP auth secret...' \
+    2>/dev/null
+`
+if secret_name != ''
+  secret = `pass show totp/#{secret_name}`.split("\n").first.tr(' ', '').upcase
+  code = ROTP::TOTP.new(secret).now
+  `xdotool type --clearmodifiers "#{code}"`
+end
