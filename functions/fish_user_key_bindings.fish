@@ -6,4 +6,8 @@ function fish_user_key_bindings
 
     bind -M insert \co accept-autosuggestion end-of-line
     bind -M insert \cf forward-word
+
+    bind -e \cl
+    bind -e -M insert \cl
+    bind -e -M visual \cl
 end
