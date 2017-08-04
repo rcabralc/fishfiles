@@ -1,6 +1,6 @@
 #!/usr/bin/fish
 
-command -v pickout >/dev/null; and command -v xdotool >/dev/null
+type -q pickout; and type -q xdotool
 test $status -ne 0; and exit 1
 
 set item (
@@ -17,8 +17,6 @@ test -z $item; and exit 1
 set password (pass show $item | head -n 1)
 xdotool type --clearmodifiers "$password"
 
-if type -q kdialog
-  kdialog --title="Password" --msgbox="Entered password for $item."
-else
-  zenity --title="Password" --text="Entered password for $item." --info
+if type -q notify-send
+  notify-send -u normal "Password" "Entered password for $item"
 end
