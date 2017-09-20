@@ -174,7 +174,7 @@ class Menu(QObject):
         super(Menu, self).__init__()
 
         self.clear()
-        self._mode_handler = ModeHandler(self)
+        self._mode_state = ModeState(insert_mode, '', None)
         self._history_path = os.path.join(os.path.dirname(__file__),
                                           'history.json')
 
@@ -191,7 +191,7 @@ class Menu(QObject):
         self.word_delimiters = delimiters
         self._accept_input = accept_input
         self._debug = debug
-        self._mode_handler.switch(insert_mode)
+        self._mode_state = self._mode_state.switch(insert_mode, '')
         self._frontend.set_input(input)
         self.input = input
 
@@ -214,7 +214,7 @@ class Menu(QObject):
 
     def connect(self, frontend):
         self._frontend = frontend
-        self._mode_handler.frontend = frontend
+        self._mode_state = self._mode_state.connect(frontend)
 
     def accept(self):
         selected = self.get_selected()
@@ -229,7 +229,9 @@ class Menu(QObject):
 
     def enter(self, input):
         self.input = input
-        self._mode_handler.switch(insert_mode)
+        self._mode_state = self._mode_state.switch(insert_mode, input)
+        self.history.go_to_end()
+        return input
 
     def next(self):
         self._index = min(self._index + 1, len(self.results) - 1)
@@ -240,18 +242,16 @@ class Menu(QObject):
         self._frontend.select(self._index)
 
     def history_next(self):
-        entry = self._history.next(self._mode_handler.input)
-        self._mode_handler.switch(history_mode)
-        return (entry if entry else self._mode_handler.input)
+        self._mode_state = self._mode_state.switch(history_mode, self.input)
+        _, entry = self._history.next(self._mode_state.input)
+        return entry
 
     def history_prev(self):
-        entry = self._history.prev(self._mode_handler.input)
-        self._mode_handler.switch(history_mode)
-        return (entry if entry else self._mode_handler.input)
+        self._mode_state = self._mode_state.switch(history_mode, self.input)
+        _, entry = self._history.prev(self._mode_state.input)
+        return entry
 
     def complete(self):
-        self._mode_handler.switch(insert_mode)
-
         def allsame(chars_at_same_position):
             return len(set(chars_at_same_position)) == 1
 
@@ -365,20 +365,24 @@ class History:
         self._entries = self._all_entries.get(self._key, [])
         self._index = len(self._entries)
 
-    def next(self, _):
-        self._index = min(len(self._entries), self._index + 1)
+    def next(self, input):
+        cut_index = min(len(self._entries), self._index + 1)
+        entries = self._entries[cut_index:]
+        for index, entry in enumerate(entries):
+            if entry.startswith(input):
+                self._index = cut_index + index
+                return True, entry
+        self.go_to_end()
+        return False, input
 
-        if self._index == len(self._entries):
-            return
-
-        return self._entries[self._index]
-
-    def prev(self, _):
-        if len(self._entries) == 0:
-            return
-
-        self._index = max(0, self._index - 1)
-        return self._entries[self._index]
+    def prev(self, input):
+        cut_index = max(0, self._index)
+        entries = self._entries[:cut_index]
+        for index, entry in reversed(list(enumerate(entries))):
+            if entry.startswith(input):
+                self._index = index
+                return True, entry
+        return False, self._entries[self._index]
 
     def add(self, entry):
         if not entry:
@@ -394,7 +398,11 @@ class History:
             self._entries = self._entries[diff:]
 
         self._all_entries[self._key] = self._entries
+        self.go_to_end()
         self._dump()
+
+    def go_to_end(self):
+        self._index = len(self._entries)
 
     def _load(self):
         with open(self._history_path, 'r') as history_file:
@@ -402,7 +410,8 @@ class History:
 
     def _dump(self):
         with open(self._history_path, 'w') as history_file:
-            history_file.write(json.dumps(self._all_entries))
+            history_file.write(json.dumps(self._all_entries, indent=2,
+                                          sort_keys=True))
 
 
 class Frontend:
@@ -471,17 +480,26 @@ class Frontend:
         self.frame.evaluateJavaScript(js)
 
 
-class ModeHandler:
-    def __init__(self, menu):
-        self.input = menu.input
-        self._menu = menu
-        self._mode = None
+class ModeState:
+    def __init__(self, mode, input, frontend=None):
+        self._mode = mode
+        self.input = input
+        self.frontend = frontend
 
-    def switch(self, mode):
-        if self._mode is not mode:
-            self._mode = mode
-            self.input = self._menu.input
-            self.frontend.report_mode(mode)
+    def switch(self, mode, input):
+        if self._mode is mode:
+            return self
+        return type(self)(mode, input, self.frontend).report()
+
+    def report(self):
+        if self.frontend:
+            self.frontend.report_mode(self._mode)
+        return self
+
+    def connect(self, frontend):
+        if self.frontend is frontend:
+            return self
+        return type(self)(self._mode, self.input, frontend)
 
 
 class Backend(QObject):
