@@ -318,11 +318,13 @@ class Menu(QObject):
             return items[min(self._index, len(items) - 1)].strip()
 
     def _candidates_for_completion(self):
-        values = self._values_for_completion()
+        default = list(self._values_for_completion())
+        values = None
 
         if self.completion_sep:
-            return self._values_until_next_sep(values, len(self.input))
-        return list(values)
+            values = self._values_until_next_sep(default, len(self.input))
+
+        return values or default
 
     def _values_for_completion(self):
         sw = str.startswith
