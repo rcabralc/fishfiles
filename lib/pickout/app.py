@@ -184,7 +184,7 @@ class Menu(QObject):
         self.clear()
 
         self._all_terms = [Term(i, c) for i, c in enumerate(items) if c]
-        self._history = History(self._history_path, history_key)
+        self._history = History.build(self._history_path, history_key)
         self._total_items = len(items)
         self._limit = limit
         self.completion_sep = sep
@@ -349,19 +349,27 @@ class Menu(QObject):
         self._frontend.under_limit()
 
 
+class EmptyHistory:
+    def prev(self, input): return False, input
+    def next(self, input): return False, input
+    def add(self, _): return
+    def go_to_end(self): return
+
+
 class History:
-    def __init__(self, history_path, key):
-        if not key:
-            self.prev = self.next = lambda input: input
-            self.add = lambda entry: None
-            self.go_to_end = lambda: None
-            return
+    @classmethod
+    def build(cls, history_path, key):
+        if not key or not history_path:
+            return EmptyHistory()
 
         if not os.path.exists(history_path):
             os.makedirs(os.path.dirname(history_path), exist_ok=True)
             with open(history_path, 'w') as f:
                 f.write(json.dumps({}))
 
+        return cls(history_path, key)
+
+    def __init__(self, history_path, key):
         self._history_path = history_path
         self._key = key
         self._all_entries = self._load()
