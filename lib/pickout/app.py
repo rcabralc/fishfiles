@@ -230,7 +230,7 @@ class Menu(QObject):
     def enter(self, input):
         self.input = input
         self._mode_state = self._mode_state.switch(insert_mode, input)
-        self.history.go_to_end()
+        self._history.go_to_end()
         return input
 
     def next(self):
