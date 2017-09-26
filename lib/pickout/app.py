@@ -354,6 +354,7 @@ class History:
         if not key:
             self.prev = self.next = lambda input: input
             self.add = lambda entry: None
+            self.go_to_end = lambda: None
             return
 
         if not os.path.exists(history_path):
