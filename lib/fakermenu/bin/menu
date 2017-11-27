@@ -1,0 +1,92 @@
+#!/usr/bin/env ruby
+
+require 'rubygems'
+
+require 'bundler'
+Bundler.setup
+
+require 'faker'
+require 'cpf_faker'
+
+unless (menucmd = ARGV[0])
+  puts "A menu command line is required"
+  exit(1)
+end
+
+generators = {
+  'Address city' => -> { Faker::Address.city },
+  'Birth date' => -> do
+    n = Time.now
+    Time.new(n.year - 18, n.month, n.day).-(80*356.25*24*3600*rand).strftime('%d/%m/%Y')
+  end,
+  'CEP' => -> { "#{(1e5*rand).to_i.to_s.rjust(5, '0')}-#{(1000*rand).to_i.to_s.rjust(3, '0')}" },
+  'CNPJ' => -> { Faker::CNPJ.numeric },
+  'CPF' => -> { Faker::CPF.numeric },
+  'Digitable line' => -> { InvoiceCode.new.to_s },
+  'Game of Thrones city' => -> { Faker::GameOfThrones.city },
+  'Game of Thrones dragon' => -> { Faker::GameOfThrones.dragon },
+  'Game of Thrones house' => -> { Faker::GameOfThrones.house },
+  'Game of Thrones quote' => -> { Faker::GameOfThrones.quote },
+  'Game of Thrones' => -> { Faker::GameOfThrones.character },
+  'Mobile phone' => -> { '11' + %w(6 7 8 9).sample + (1e8*rand).to_i.to_s.rjust(7, '0') },
+  'Money' => -> { (1e6*rand).to_i.to_s + ',00' },
+  'Phone' => -> { '11' + %w(1 2 3 4 5).sample + (1e7*rand).to_i.to_s.rjust(7, '0') },
+  'Pokemon location' => -> { Faker::Pokemon.location },
+  'Pokemon move' => -> { Faker::Pokemon.move },
+  'Pokemon' => -> { Faker::Pokemon.name },
+  'Rock band' => -> { Faker::RockBand.name }
+}
+
+class InvoiceCode
+  def to_s
+    bank_code         = random(3)
+    currency_code     = '9'
+    free_area_1       = random(5)
+    field_1_verifier  = field_verifier(bank_code, currency_code, free_area_1)
+    free_area_2       = random(10)
+    field_2_verifier  = field_verifier(free_area_2)
+    free_area_3       = random(10)
+    field_3_verifier  = field_verifier(free_area_3)
+    nominal_value     = random(10)
+    bar_code_verifier = bar_code_verifier(bank_code, currency_code, due_date_factor,
+                                          nominal_value, free_area_1, free_area_2, free_area_3)
+
+    "#{bank_code}#{currency_code}#{free_area_1[0]}.#{free_area_1[1..-1]}#{field_1_verifier} "\
+      "#{free_area_2[0..4]}.#{free_area_2[5..-1]}#{field_2_verifier} "\
+      "#{free_area_3[0..4]}.#{free_area_3[5..-1]}#{field_3_verifier} "\
+      "#{bar_code_verifier} #{due_date_factor}#{nominal_value}"
+  end
+
+private
+
+  def random(n)
+    n.times.map { (rand * 10).to_i }.join
+  end
+
+  def due_date_factor
+    # 1000 = 2000-07-03 and 6295 = 2015-01-01.
+    (6295 + (Date.today - Date.new(2015, 1, 1)).to_i + 1).to_s
+  end
+
+  BAR_CODE_VALIDATION_WEIGHTS = (2..9).cycle.take(43).reverse.freeze
+  def bar_code_verifier(*digit_sequences)
+    digits = digit_sequences.reduce(:+).split('').map(&:to_i)
+    products = BAR_CODE_VALIDATION_WEIGHTS.zip(digits).map { |w, n| w * n }
+    sum = products.reduce(:+)
+    verifier = 11 - (sum % 11)
+    (verifier >= 10 ? 1 : verifier)
+  end
+
+  FIELD_VALIDATION_WEIGHTS = [2, 1].cycle.take(10).freeze
+  def field_verifier(*digit_sequences)
+    field_digits = digit_sequences.reduce(:+).split('').map(&:to_i).reverse
+    products = FIELD_VALIDATION_WEIGHTS.take(field_digits.size).zip(field_digits).map { |w, n| w * n }
+    digits_sum = products.map { |p| p.to_s.split('').map(&:to_i).reduce(:+) }
+    ((10 - (digits_sum.reduce(:+) % 10)) % 10)
+  end
+end
+
+if (choice = %x{echo "#{generators.keys.join("\n")}" | #{menucmd}}) != ''
+  exit(1) unless (data = generators[choice.strip])
+  `xdotool type --clearmodifiers "#{data.call}"`
+end
