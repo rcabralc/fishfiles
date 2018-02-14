@@ -15,11 +15,6 @@ function fish_right_prompt
     end
     set_color normal
 
-    set_color bryellow
-    printf "$sep%s" (date "+%d/%m")
-    set_color normal
-    set sep " "
-
     set_color brown
     printf "$sep%s" (date "+%Hh%M")
     set_color normal
@@ -28,7 +23,7 @@ function fish_right_prompt
     set batteryprompt (battery_prompt)
     if test $status -eq 0
         set_color brred
-        printf "$sep⚡%s" $batteryprompt
+        printf "$sep%s" $batteryprompt
         set_color normal
         set sep " "
     end
