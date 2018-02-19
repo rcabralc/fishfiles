@@ -6,4 +6,5 @@ function fish_user_key_bindings
 
     bind -M insert \cl accept-autosuggestion end-of-line
     bind -M insert \cf forward-word
+    bind -M insert \cw backward-kill-word
 end
