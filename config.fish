@@ -68,3 +68,5 @@ mkdir -p ~/.config/fish/site
 for f in (find ~/.config/fish/site/ -type f -name '*.fish' | sort)
     source $f
 end
+
+dedup_path
