@@ -8,7 +8,7 @@ Filter lines from standard input according to one or more patterns, and print
 them to standard output.
 
 Results are sorted by length of matched portion (sum for more than one
-pattern), followed by length of item.
+pattern), followed by length of item, followed by its order in the input lines.
 
 Depending on the given options, the output may or may not be printed as the
 input is read.  If sorting is being done (the default) or some limit is
@@ -63,10 +63,10 @@ Options:
                 and concatenating the result of doing the same for each element
                 in order, the entry (the value property) is recovered.
 
-        rank    An array of two elements representing the quality of the match.
-                Lower numbers are better.  The first number is the sum of
-                extents of matched portions of the string of all patterns, and
-                the second is the length of the entry.
+        rank    An array of three elements representing the quality of the
+                match.  Lower numbers are better.  The first number is the sum
+                of extents of matched portions of the string of all patterns,
+                and the second is the length of the entry.
 
     --source-command=COMMAND
         Instead of taking items from standard input, take them from the output

@@ -228,7 +228,7 @@ class CompositeMatch(object):
         self.term = term
         self.id = term.id
         self.value = term.value
-        self.rank = (sum(m.length for m in matches), len(term.value))
+        self.rank = (sum(m.length for m in matches), len(term.value), term.id)
         self._matches = matches
 
     def asdict(self):
