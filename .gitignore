@@ -5,3 +5,5 @@ fishd.*
 *.swp
 **/__pycache__/*
 **/pickout/history.json
+bin/*.c
+bin/*.so
