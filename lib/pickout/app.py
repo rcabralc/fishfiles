@@ -66,59 +66,50 @@ def filter(terms, pat, **options):
     return incremental_filter(terms, patterns, **options)
 
 
-class Pattern(object):
-    incremental = False
-
-    def __init__(self, value):
-        self.value = value
+class Pattern:
+    def __init__(self, inner):
+        self.inner = inner
 
     def __eq__(self, other):
-        if hasattr(other, 'value'):
-            return self.value == other.value
+        return isinstance(other, type(self)) and other.inner == self.inner
 
     def __hash__(self):
-        return hash(self.value)
+        return hash(self.inner)
 
 
-class InverseExactPattern(Pattern):
+class IncrementalPattern(Pattern):
+    def exhaust(self):
+        for i in range(len(self.inner.value) - 1, -1, -1):
+            yield type(self)(type(self.inner)(self.inner.value[0:i + 1]))
+
+    def __repr__(self):
+        return 'IncrementalPattern({}, inner={})'.format(
+            repr(self.inner.value),
+            repr(self.inner)
+        )
+
+
+class NonIncrementalPattern(Pattern):
     pass
 
 
-class InverseFuzzyPattern(Pattern):
-    pass
+def wrap_pattern(elect_pattern):
+    if (type(elect_pattern) == elect.FuzzyPattern or
+            type(elect_pattern) == elect.ExactPattern):
+        return IncrementalPattern(elect_pattern)
+    return NonIncrementalPattern(elect_pattern)
 
 
-class ExactPattern(Pattern):
-    incremental = True
-
-
-class RegexPattern(Pattern):
-    pass
-
-
-class FuzzyPattern(Pattern):
-    incremental = True
-
-
-def make_pattern(value):
-    if value.startswith("!="):
-        return InverseExactPattern(value)
-    elif value.startswith('!'):
-        return InverseFuzzyPattern(value)
-    elif value.startswith("="):
-        return ExactPattern(value)
-    elif value.startswith("@"):
-        return RegexPattern(value)
-    return FuzzyPattern(value)
-
-
-def incremental_filter(terms, pattern_values, debug=False, **options):
-    patterns = [make_pattern(p) for p in pattern_values]
+def incremental_filter(terms, pattern_strings, debug=False, **options):
+    patterns = [wrap_pattern(elect.make_pattern(p))
+                for p in pattern_strings]
 
     def full_filter(items):
-        return elect.filter_terms(items, *pattern_values, **options)
+        return elect.filter_terms(items, *[p.inner for p in patterns],
+                                  **options)
 
-    non_incremental_patterns = [p for p in patterns if not p.incremental]
+    non_incremental_patterns = [p for p in patterns
+                                if not isinstance(p, IncrementalPattern)]
     if non_incremental_patterns or not patterns:
         return full_filter(terms)
 
@@ -703,12 +694,12 @@ class PatternCache(object):
         else:
             def debug(fn): return
 
-        patterns = tuple(p.value for p in patterns)
+        patterns = tuple(patterns)
         debug(lambda: "updating cache for patterns: {}\n".format(patterns))
         self._cache[patterns] = frozenset(matches)
 
     def find(self, patterns, default=frozenset(), debug=False):
-        patterns = tuple(p.value for p in patterns)
+        patterns = tuple(patterns)
         cached = None
         best_pattern = ()
 
@@ -742,7 +733,7 @@ class PatternCache(object):
 
     def _exhaust(self, patterns):
         if len(patterns) == 1:
-            for exhaustion in self._exhaust_pattern(patterns[0]):
+            for exhaustion in patterns[0].exhaust():
                 yield (exhaustion,)
             return
 
@@ -751,13 +742,9 @@ class PatternCache(object):
             lpatterns = patterns[:i]
             rpatterns = patterns[i + 1:]
 
-            for exhaustion in self._exhaust_pattern(pattern):
+            for exhaustion in pattern.exhaust():
                 for subexhaustion in self._exhaust(rpatterns):
                     yield lpatterns + (exhaustion,) + subexhaustion
-
-    def _exhaust_pattern(self, pattern):
-        for i in range(len(pattern) - 1, -1, -1):
-            yield pattern[0:i + 1]
 
 
 class IncrementalCache(object):

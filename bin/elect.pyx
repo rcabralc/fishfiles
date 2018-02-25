@@ -15,6 +15,14 @@ class Pattern(object):
             self.length = 0
             self.best_match = UnhighlightedMatch
 
+    def __eq__(self, other):
+        if isinstance(other, type(self)):
+            return self.value == other.value
+        return False
+
+    def __hash__(self):
+        return hash(self.value)
+
     def __len__(self):
         return self.length
 
@@ -39,6 +47,8 @@ class SmartCasePattern(Pattern):
 
 
 class ExactPattern(SmartCasePattern):
+    prefix = '@='
+
     def best_match(self, term):
         value = term.value
         if self.ignore_case:
@@ -51,6 +61,8 @@ class ExactPattern(SmartCasePattern):
 
 
 class FuzzyPattern(SmartCasePattern):
+    prefix = '@*'
+
     def best_match(self, term):
         cdef int i, j, length, best
 
@@ -86,14 +98,9 @@ class FuzzyPattern(SmartCasePattern):
         return FuzzyMatch(indices)
 
 
-class InverseFuzzyPattern(FuzzyPattern):
-    def best_match(self, term):
-        if super(InverseFuzzyPattern, self).best_match(term) is not None:
-            return
-        return UnhighlightedMatch(term)
-
-
 class InverseExactPattern(ExactPattern):
+    prefix = '@!'
+
     def best_match(self, term):
         value = term.value
         if self.ignore_case:
@@ -106,12 +113,14 @@ class InverseExactPattern(ExactPattern):
 
 
 class RegexPattern(Pattern):
+    prefix = '@/'
+
     def __init__(self, pattern, ignore_bad_patterns=True):
-        if not pattern:
-            self.best_match = UnhighlightedMatch
-        else:
+        super(RegexPattern, self).__init__(pattern)
+        if pattern:
+            self.value = '(?iu)' + pattern
             try:
-                self._re = re.compile('(?iu)' + pattern)
+                self._re = re.compile(self.value)
             except sre_constants.error:
                 if not ignore_bad_patterns:
                     raise
@@ -306,18 +315,22 @@ class Contest(object):
         return processed_matches
 
 
+patternTypes = [
+    FuzzyPattern,
+    RegexPattern,
+    ExactPattern,
+    InverseExactPattern,
+]
+
 def make_pattern(pattern):
-    if pattern.startswith("!="):
-        return InverseExactPattern(pattern[2:])
-    elif pattern.startswith('!'):
-        return InverseFuzzyPattern(pattern[1:])
-    elif pattern.startswith("="):
-        return ExactPattern(pattern[1:])
-    elif pattern.startswith("@"):
-        return RegexPattern(pattern[1:])
+    if isinstance(pattern, Pattern):
+        return pattern
+    for patternType in patternTypes:
+        if pattern.startswith(patternType.prefix):
+            return patternType(pattern[len(patternType.prefix):])
     return FuzzyPattern(pattern)
 
 
 def filter_terms(terms, *patterns, **options):
-    patterns = [make_pattern(''.join(p)) for p in patterns]
+    patterns = [make_pattern(p) for p in patterns]
     return Contest(*patterns).elect(terms, **options)

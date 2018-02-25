@@ -78,11 +78,11 @@ Patterns:
     The interpretation of the pattern is done according to its initial
     characters (which is not part of the pattern):
 
-        @                   Regular expression.
-        =                   Exact match.
-        !=                  Exact inverse match.
-        !                   Non-exact fuzzy inverse match.
-        <anything else>     Fuzzy match.
+        @*                  Fuzzy match
+        @/                  Regular expression
+        @=                  Exact match
+        @!                  Exact inverse match
+        <anything else>     Fuzzy match
 """
 
 from docopt import docopt
