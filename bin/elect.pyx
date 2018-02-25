@@ -129,8 +129,6 @@ Patterns:
         <anything else>     Fuzzy match.
 """
 
-from __future__ import print_function
-
 import functools
 import operator
 import re
