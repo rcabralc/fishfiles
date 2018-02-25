@@ -68,51 +68,6 @@ Options:
                 of extents of matched portions of the string of all patterns,
                 and the second is the length of the entry.
 
-    --source-command=COMMAND
-        Instead of taking items from standard input, take them from the output
-        of COMMAND.
-
-        Any '%s' in the COMMAND string is replaced by the raw patterns (in
-        order).
-
-        This option, in conjunction with `--source-match-start',
-        `--source-match-end' and `--output-json', make this script work as a
-        generic normalizing transformer for arbitrary commands.
-
-    --source-match-start=REGEXP
-    --source-match-end=REGEXP
-        Match start and end of matched portions in source lines accoding to the
-        given REGEXPs.
-
-        Usually they should match the escapes \\x1b[31m and \\x1b[9m,
-        respectively.  There's no default.
-
-        They should be given together.  If one of them is given and not the
-        other, the script terminates with an error code, and no output is
-        printed.
-
-        Once they are both given, the script will behave as a normalizing
-        transformer on the items of standard input (or whatever is used in
-        `--source-command'), and no filtering or sorting is done (all patterns
-        are ignored, unless they are being passed to the source command).  If
-        `--entry' regular expression is provided, its result is the one used to
-        find match starts and ends.
-
-        If `--output-json' is given, the rank property will be [0, 0] for all
-        objects, since no sorting or filtering is done.
-
-    --id=REGEXP
-        Run input lines through REGEXP in order to extract an id.
-
-        By default, the id of a term is its 1-based line number.  Using ids
-        make them trackable from outside.  Ids and entries are emitted in the
-        output in the format given in `--output'.
-
-    --entry=REGEXP
-        Run input lines through REGEXP in order to extract the entry's value.
-
-        By default, this is the whole line.
-
     --no-color
         Turn off colored output.
 
