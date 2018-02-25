@@ -318,6 +318,6 @@ def make_pattern(pattern):
     return FuzzyPattern(pattern)
 
 
-def filter_entries(terms, *patterns, **options):
+def filter_terms(terms, *patterns, **options):
     patterns = [make_pattern(''.join(p)) for p in patterns]
     return Contest(*patterns).elect(terms, **options)

@@ -116,7 +116,7 @@ def incremental_filter(terms, pattern_values, debug=False, **options):
     patterns = [make_pattern(p) for p in pattern_values]
 
     def full_filter(items):
-        return elect.filter_entries(items, *pattern_values, **options)
+        return elect.filter_terms(items, *pattern_values, **options)
 
     non_incremental_patterns = [p for p in patterns if not p.incremental]
     if non_incremental_patterns or not patterns:
