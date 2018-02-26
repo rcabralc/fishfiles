@@ -68,7 +68,7 @@ class FuzzyPattern(SmartCasePattern):
     def best_match(self, term):
         cdef int i, j, length, best
         cdef str p, c, value
-        cdef list m, row
+        cdef list m, row, last_row
 
         if not self.length:
             return UnhighlightedMatch
@@ -77,15 +77,16 @@ class FuzzyPattern(SmartCasePattern):
         if self.ignore_case:
             value = value.lower()
         length = term.length
-        m = [[0] * (length + 1)]
+        last_row = [0] * (length + 1)
+        m = [last_row]
 
         for i, p in enumerate(self.value):
             best = length + 1
             row = [None] * best
             best_index = current_length = None
             for j, c in enumerate(value):
-                if m[i][j] is not None:
-                    current_length = m[i][j]
+                if last_row[j] is not None:
+                    current_length = last_row[j]
                 if current_length is None: continue
                 current_length += 1
                 if c != p: continue
@@ -96,6 +97,7 @@ class FuzzyPattern(SmartCasePattern):
             if best_index is None:
                 return
             m.append(row)
+            last_row = row
 
         indices = []
         for i in reversed(range(len(self.value))):
