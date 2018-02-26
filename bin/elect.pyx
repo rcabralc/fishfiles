@@ -13,7 +13,6 @@ class Pattern(object):
             self.length = len(pattern)
         else:
             self.length = 0
-            self.best_match = UnhighlightedMatch
 
     def __eq__(self, other):
         if isinstance(other, type(self)):
@@ -50,6 +49,9 @@ class ExactPattern(SmartCasePattern):
     prefix = '@='
 
     def best_match(self, term):
+        if not self.length:
+            return UnhighlightedMatch
+
         value = term.value
         if self.ignore_case:
             value = value.lower()
@@ -57,7 +59,7 @@ class ExactPattern(SmartCasePattern):
         if self.value not in value:
             return
 
-        return ExactMatch(value, self)
+        return Match.from_exact(value, self)
 
 
 class FuzzyPattern(SmartCasePattern):
@@ -65,6 +67,11 @@ class FuzzyPattern(SmartCasePattern):
 
     def best_match(self, term):
         cdef int i, j, length, best
+        cdef str p, c, value
+        cdef list m, row
+
+        if not self.length:
+            return UnhighlightedMatch
 
         value = term.value
         if self.ignore_case:
@@ -79,13 +86,13 @@ class FuzzyPattern(SmartCasePattern):
             for j, c in enumerate(value):
                 if m[i][j] is not None:
                     current_length = m[i][j]
-                if current_length is not None:
-                    current_length += 1
-                if c == p and current_length is not None:
-                    if current_length < best:
-                        best = current_length
-                        best_index = j
-                    row[j + 1] = current_length
+                if current_length is None: continue
+                current_length += 1
+                if c != p: continue
+                row[j + 1] = current_length
+                if current_length < best:
+                    best = current_length
+                    best_index = j
             if best_index is None:
                 return
             m.append(row)
@@ -97,13 +104,16 @@ class FuzzyPattern(SmartCasePattern):
                 best_index -= 1
             best_index = best_index - 1
 
-        return FuzzyMatch(indices)
+        return Match(indices)
 
 
 class InverseExactPattern(ExactPattern):
     prefix = '@!'
 
     def best_match(self, term):
+        if not self.length:
+            return UnhighlightedMatch
+
         value = term.value
         if self.ignore_case:
             value = value.lower()
@@ -111,7 +121,7 @@ class InverseExactPattern(ExactPattern):
         if self.value in value:
             return
 
-        return UnhighlightedMatch(term)
+        return UnhighlightedMatch
 
 
 class RegexPattern(Pattern):
@@ -121,31 +131,40 @@ class RegexPattern(Pattern):
         super(RegexPattern, self).__init__(pattern)
         if pattern:
             self.value = '(?iu)' + pattern
+            self._can_match = True
             try:
                 self._re = re.compile(self.value)
             except sre_constants.error:
                 if not ignore_bad_patterns:
                     raise
-                self.best_match = UnhighlightedMatch
+                self._can_match = False
 
     def best_match(self, term):
+        if not self._can_match:
+            return UnhighlightedMatch
+
         value = term.value
         match = self._re.search(value)
         if match is not None:
-            return RegexMatch(match)
+            return Match.from_re(match)
+
+        return
 
 
-class CompositePattern(object):
+cdef class CompositePattern(object):
+    cdef list _patterns
+
     def __init__(self, patterns):
         self._patterns = patterns
 
-    def match(self, term):
+    cpdef CompositeMatch match(self, term):
+        cdef Match best_match
         matches = []
 
         for pattern in self._patterns:
             best_match = pattern.best_match(term)
 
-            if not best_match:
+            if best_match is None:
                 return
 
             matches.append(best_match)
@@ -153,87 +172,53 @@ class CompositePattern(object):
         return CompositeMatch(term, tuple(matches))
 
 
-class UnhighlightedMatch(object):
-    length = 0
+class Term(object):
+    __slots__ = ('id', 'value', 'length')
 
-    def __init__(self, term):
-        pass
-
-    @property
-    def indices(self):
-        return frozenset()
+    def __init__(self, id, value):
+        self.id = id
+        self.value = value
+        self.length = len(value)
 
 
-class ExactMatch(object):
-    __slots__ = ('_value', '_pattern', 'length')
+cdef class Match:
+    cdef public int length
+    cdef public tuple indices
 
-    def __init__(self, value, pattern):
-        self._value = value
-        self._pattern = pattern
-        self.length = pattern.length
+    def __init__(self, indices):
+        if indices:
+            self.length = indices[-1] - indices[0] + 1
+        else:
+            self.length = 0
+        self.indices = tuple(indices)
 
-    @property
-    def indices(self):
+    @classmethod
+    def from_exact(cls, value, pattern):
         indices = []
 
-        string = self._value
-        if self._pattern.ignore_case:
-            string = string.lower()
+        if pattern.ignore_case:
+            value = value.lower()
 
-        current = string.find(self._pattern.value)
-        for index in range(current, current + self._pattern.length):
+        current = value.find(pattern.value)
+        for index in range(current, current + pattern.length):
             indices.append(index)
 
-        return frozenset(indices)
+        return cls(indices)
+
+    @classmethod
+    def from_re(cls, match):
+        return cls(list(range(*match.span())))
 
 
-class FuzzyMatch(object):
-    __slots__ = ('indices', 'length')
-
-    def __init__(self, indices):
-        self.length = indices[-1] - indices[0] + 1
-        self.indices = frozenset(indices)
+UnhighlightedMatch = Match([])
 
 
-class RegexMatch(object):
-    __slots__ = ('_match', 'length', 'indices')
-
-    def __init__(self, match):
-        self._match = match
-        start, end = match.span()
-        self.length = end - start
-        self.indices = range(start, end)
-
-
-class Streaks(object):
-    def __init__(self, indices):
-        self.indices = frozenset(indices)
-
-    def __iter__(self):
-        if not self.indices:
-            return
-
-        indices = sorted(self.indices)
-
-        (head,), tail = indices[0:1], indices[1:]
-        chunks = [[head]]
-        (chunk,) = chunks
-        for i in tail:
-            if i == chunk[-1] + 1:
-                chunk.append(i)
-            else:
-                chunk = [i]
-                chunks.append(chunk)
-
-        for chunk in chunks:
-            yield chunk[0], chunk[-1] + 1
-
-    def merge(self, other):
-        return type(self)(self.indices.union(other.indices))
-
-
-class CompositeMatch(object):
-    __slots__ = ('term', 'id', 'value', 'rank', '_matches')
+cdef class CompositeMatch(object):
+    cdef public object term
+    cdef public object id
+    cdef public str value
+    cdef public tuple rank
+    cdef tuple _matches
 
     def __init__(self, term, matches):
         self.term = term
@@ -278,13 +263,34 @@ class CompositeMatch(object):
             yield (start, end)
 
 
-class Term(object):
-    __slots__ = ('id', 'value', 'length')
+NoMatch = CompositeMatch(Term(0, ''), ())
 
-    def __init__(self, id, value):
-        self.id = id
-        self.value = value
-        self.length = len(value)
+
+class Streaks(object):
+    def __init__(self, indices):
+        self.indices = frozenset(indices)
+
+    def __iter__(self):
+        if not self.indices:
+            return
+
+        indices = sorted(self.indices)
+
+        (head,), tail = indices[0:1], indices[1:]
+        chunks = [[head]]
+        (chunk,) = chunks
+        for i in tail:
+            if i == chunk[-1] + 1:
+                chunk.append(i)
+            else:
+                chunk = [i]
+                chunks.append(chunk)
+
+        for chunk in chunks:
+            yield chunk[0], chunk[-1] + 1
+
+    def merge(self, other):
+        return type(self)(self.indices.union(other.indices))
 
 
 class Contest(object):
@@ -296,8 +302,7 @@ class Contest(object):
         limit = kw.get('limit', None)
         sort_limit = kw.get('sort_limit', None)
         key = operator.attrgetter('rank')
-        # `is not None' is faster and None is common, so sub-case it for perf.
-        matches = (m for m in (match(t) for t in terms) if m is not None and m)
+        matches = (m for m in (match(t) for t in terms) if m is not None)
 
         if sort_limit is None:
             processed_matches = sorted(matches, key=key)
