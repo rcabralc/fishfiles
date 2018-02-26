@@ -67,6 +67,8 @@ class FuzzyPattern(SmartCasePattern):
         cdef int i, j, length, best
 
         value = term.value
+        if self.ignore_case:
+            value = value.lower()
         length = term.length
         m = [[0] * (length + 1)]
 
