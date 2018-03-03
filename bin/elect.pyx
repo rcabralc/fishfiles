@@ -66,9 +66,9 @@ class FuzzyPattern(SmartCasePattern):
     prefix = '@*'
 
     def best_match(self, term):
-        cdef int i, j, length, best_index, current_length, start_index = 0, min_index = 0
-        cdef str p, value
-        cdef list m, row, last_row, indices
+        cdef int i, j, length, best
+        cdef str p, c, value
+        cdef list m, row, last_row
 
         if not self.length:
             return UnhighlightedMatch
@@ -79,30 +79,32 @@ class FuzzyPattern(SmartCasePattern):
         length = term.length
         last_row = [0] * (length + 1)
         m = [last_row]
-        pattern = self.value
 
-        for i in range(self.length):
-            p = pattern[i]
-            row = [0] * (length + 1)
-            for j in range(start_index, length):
-                if value[j] == p:
-                    if min_index == start_index:
-                        min_index = j + 1
-                    current_length = last_row[j] + 1
-                    row[j + 1] = current_length
-            if min_index == start_index:
+        for i, p in enumerate(self.value):
+            best = length + 1
+            row = [None] * best
+            best_index = current_length = None
+            for j, c in enumerate(value):
+                if last_row[j] is not None:
+                    current_length = last_row[j]
+                if current_length is None: continue
+                current_length += 1
+                if c != p: continue
+                row[j + 1] = current_length
+                if current_length < best:
+                    best = current_length
+                    best_index = j
+            if best_index is None:
                 return
             m.append(row)
             last_row = row
-            start_index = min_index
 
         indices = []
-        best_index = length
-        for i in reversed(range(len(pattern))):
-            while not m[i + 1][best_index]:
+        for i in reversed(range(len(self.value))):
+            indices.insert(0, best_index)
+            while m[i][best_index] is None:
                 best_index -= 1
             best_index = best_index - 1
-            indices.insert(0, best_index)
 
         return Match(indices)
 
