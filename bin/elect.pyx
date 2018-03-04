@@ -66,7 +66,8 @@ class FuzzyPattern(SmartCasePattern):
     prefix = '@*'
 
     def best_match(self, term):
-        cdef int i, j, length, best
+        cdef int i, j, length, best, best_index, start_index = 0, min_index = 0
+        cdef int current_length
         cdef str p, c, value
         cdef list m, row, last_row
 
@@ -79,25 +80,36 @@ class FuzzyPattern(SmartCasePattern):
         length = term.length
         last_row = [0] * (length + 1)
         m = [last_row]
+        pattern = self.value
+        best_index = length
 
-        for i, p in enumerate(self.value):
-            best = length + 1
-            row = [None] * best
-            best_index = current_length = None
-            for j, c in enumerate(value):
-                if last_row[j] is not None:
-                    current_length = last_row[j]
-                if current_length is None: continue
+        for i in range(self.length):
+            p = pattern[i]
+            row = [None] * (length + 1)
+            current_length = 0
+            start_index = min_index
+            for j in range(start_index, length):
+                c = value[j]
+                prev = last_row[j]
+                if prev is not None: current_length = prev
                 current_length += 1
                 if c != p: continue
                 row[j + 1] = current_length
-                if current_length < best:
-                    best = current_length
-                    best_index = j
-            if best_index is None:
+                if min_index == start_index:
+                    min_index = j + 1
+            if min_index == start_index:
                 return
             m.append(row)
             last_row = row
+
+        best = length + 1
+        for i in range(start_index, length):
+            if last_row[i + 1] is None: continue
+            if last_row[i + 1] < best:
+                best = last_row[i + 1]
+                best_index = i
+
+        if best_index == -1: return
 
         indices = []
         for i in reversed(range(len(self.value))):
