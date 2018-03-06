@@ -311,12 +311,10 @@ class Contest(object):
     def __init__(self, *patterns):
         self.pattern = CompositePattern(list(patterns))
 
-    def elect(self, terms, **kw):
-        match = self.pattern.match
+    def rank(self, matches, **kw):
         limit = kw.get('limit', None)
         sort_limit = kw.get('sort_limit', None)
         key = operator.attrgetter('rank')
-        matches = (m for m in (match(t) for t in terms) if m is not None)
 
         if sort_limit is None:
             processed_matches = sorted(matches, key=key)
@@ -334,6 +332,11 @@ class Contest(object):
             processed_matches = list(reversed(processed_matches))
 
         return processed_matches
+
+    def elect(self, terms, **kw):
+        match = self.pattern.match
+        matches = (m for m in (match(t) for t in terms) if m is not None)
+        return self.rank(matches, **kw)
 
 
 patternTypes = [
@@ -355,3 +358,7 @@ def make_pattern(pattern):
 def filter_terms(terms, *patterns, **options):
     patterns = [make_pattern(p) for p in patterns]
     return Contest(*patterns).elect(terms, **options)
+
+
+def sort_matches(matches, **options):
+    return Contest().rank(matches, **options)
