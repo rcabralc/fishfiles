@@ -127,7 +127,7 @@ def incremental_filter(terms, pattern_strings, debug=False, **options):
         best_patterns, cached = find(patterns, debug=debug)
 
         if best_patterns == set(best_possible_patterns(patterns)):
-            return cached
+            return elect.sort_matches(cached, **options)
 
         for t, best in best_patterns:
             if best:
