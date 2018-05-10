@@ -3,6 +3,8 @@
 type -q pickout; and type -q xdotool
 test $status -ne 0; and exit 1
 
+set WORK_NOTES_ITEM 'notes/work/passwd'
+
 set item (
   pass git ls-files "**.gpg" | \
     grep -v '^totp/' | \
@@ -14,7 +16,23 @@ set item (
 
 test -z $item; and exit 1
 
-set password (pass show $item | head -n 1)
+if test $item = $WORK_NOTES_ITEM
+  set filterpath (
+    pass show $WORK_NOTES_ITEM | \
+      tail -n+3 | \
+      jq -r 'paths(scalars) | join("/")' | \
+      grep '\/password$' | \
+      sort | \
+      pickout --daemonize --history password-work-notes --title 'Select password from work notes...' \
+      2>/dev/null
+  )
+  set item "$item (at $filterpath)"
+  set filter .(echo $filterpath | sed -E 's/([^\/]*)/"\1"/g' | sed 's/\//\./g')
+  set password (pass show $WORK_NOTES_ITEM | tail -n+3 | jq -r $filter)
+else
+  set password (pass show $item | head -n 1)
+end
+
 xdotool type --clearmodifiers "$password"
 
 if type -q notify-send
