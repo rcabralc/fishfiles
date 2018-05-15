@@ -19,7 +19,6 @@ test -z $item; and exit 1
 if test $item = $WORK_NOTES_ITEM
   set filterpath (
     pass show $WORK_NOTES_ITEM | \
-      tail -n+3 | \
       jq -r 'paths(scalars) | join("/")' | \
       grep '\/password$' | \
       sort | \
@@ -28,7 +27,7 @@ if test $item = $WORK_NOTES_ITEM
   )
   set item "$item (at $filterpath)"
   set filter .(echo $filterpath | sed -E 's/([^\/]*)/"\1"/g' | sed 's/\//\./g')
-  set password (pass show $WORK_NOTES_ITEM | tail -n+3 | jq -r $filter)
+  set password (pass show $WORK_NOTES_ITEM | jq -r $filter)
 else
   set password (pass show $item | head -n 1)
 end
