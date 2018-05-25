@@ -1,0 +1,9 @@
+#!/usr/bin/ruby
+puts File.readlines(ARGV[0].gsub(/^~/, ENV['HOME']))
+  .map(&:strip)
+  .reject { |l| l =~ /^[;#]/ }
+  .inject([]) { |c, l| c << [] if l =~ /^\[[^\]]+\]$/; c.last << l; c }
+  .map { |c| s, *ll = c; [s[1..-2], ll.map{ |l| l.split('=').map(&:strip) }.to_h] }
+  .to_h
+  .fetch(ARGV[1])
+  .fetch(ARGV[2])
