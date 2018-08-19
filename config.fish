@@ -32,7 +32,9 @@ if test -x "$HOME/.linuxbrew/bin" >/dev/null
   set INFOPATH "$HOME/.linuxbrew/share/info" $INFOPATH
 end
 
-set PATH ~/.local/bin ~/.rbenv/bin $PATH
+mkdir -p ~/.local/bin
+set PATH ~/.local/bin $PATH
+test -x ~/.rbenv/bin; and set PATH ~/.rbenv/bin $PATH
 set -gx EDITOR nvim
 set -gx LESS FRX
 
@@ -40,7 +42,8 @@ set fish_key_bindings fish_user_key_bindings
 fish_vi_cursor auto
 set -g fish_cursor_insert line blink
 
-status --is-interactive; and source (~/.rbenv/bin/rbenv init - | psub)
+status --is-interactive; and command -v rbenv >/dev/null;
+and source (~/.rbenv/bin/rbenv init - | psub)
 
 if command -v direnv >/dev/null
   eval (direnv hook fish)
