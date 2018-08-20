@@ -52,8 +52,7 @@ end
 
 set -gx SHELL (command -v fish)
 
-# SSH key management.
-ssh_agent
+status --is-interactive; and ssh_agent
 
 # More configuration is placed in site/
 mkdir -p ~/.config/fish/site
