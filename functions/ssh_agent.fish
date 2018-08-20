@@ -18,7 +18,7 @@ function ssh_agent --description 'launch the ssh-agent and add identities'
         set -l fingerprint (ssh-keygen -lf $identity | awk '{print $2}')
         if not ssh-add -l | grep -q $fingerprint
             set -l expect_file ~/.local/ps.expect
-            set -l password (pass show ssh/(basename $identity) | head -n 1)
+            set -l password (pass show ssh/(basename $identity) | head -n 1 | sed 's/\$/\\\\x24/g')
             echo "log_user 0" > $expect_file
             echo "spawn ssh-add -q $identity" >> $expect_file
             echo "expect \"Enter passphrase\"" >> $expect_file
