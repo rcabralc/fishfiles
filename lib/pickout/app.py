@@ -171,10 +171,14 @@ class Menu(QObject):
 
     def setup(self, items,
               input='', limit=None, sep=None, history_key=None,
-              delimiters=[], accept_input=False, debug=False):
+              delimiters=[], accept_input=False, keep_empty_items=False,
+              debug=False):
+        def keep(item):
+            return keep_empty_items or item.strip()
+
         self.clear()
 
-        self._all_terms = [Term(i, c) for i, c in enumerate(items) if c]
+        self._all_terms = [Term(i, c) for i, c in enumerate(items) if keep(c)]
         self._history = History.build(self._history_path, history_key)
         self._total_items = len(items)
         self._limit = limit

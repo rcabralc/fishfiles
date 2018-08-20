@@ -35,6 +35,9 @@ Options:
         Allow any text typed in the search input to be accepted through
         Ctrl-Enter.
 
+    --keep-empty-lines
+        Don't filter out empty lines from input.
+
     --title TITLE
         Set the window title to TITLE.
 
@@ -102,6 +105,7 @@ def main(args):
         delimiters=list((args['--word-delimiters'] or '')),
         history_key=args['--history-key'],
         accept_input=args['--accept-input'],
+        keep_empty_items=args['--keep-empty-lines'],
         title=args['--title'],
         debug=args['--debug']
     )
