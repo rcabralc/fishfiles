@@ -49,19 +49,7 @@ end
 set -gx SHELL (command -v fish)
 
 # SSH key management.
-test -f ~/.local/bin/askpass; and \
-  command -v pass >/dev/null; and \
-  command -v keychain >/dev/null; and \
-  status --is-interactive
-if test $status -eq 0
-  # This askpass program uses pass (which uses GPG) to get passwords.
-  set -gx SSH_ASKPASS ~/.local/bin/askpass
-
-  # SSH key management.  Using keychain to add the keys to start the agent
-  # and add the keys.  If the agent already has been started, keychain does
-  # nothing but returning success (but adds the requested keys).
-  keychain --eval --agents ssh -Q --quiet id_rsa id_ecdsa | source
-end
+ssh_agent
 
 # More configuration is placed in site/
 mkdir -p ~/.config/fish/site
