@@ -1,6 +1,7 @@
 set -gx DEFAULT_USER "rcabralc"
 set -gx DEFAULT_HOST "atrocious"
 set -gx fish_greeting ''
+set -gx GPG_TTY (tty)
 
 source ~/.config/fish/colors.fish
 
