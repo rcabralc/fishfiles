@@ -5,12 +5,8 @@ function ssh_agent --description 'launch the ssh-agent and add identities'
     set -ge SSH_AGENT_PID
     set -ge SSH_AUTH_SOCK
 
-    set -q SSH_AGENT_PID
-        and kill -0 $SSH_AGENT_PID 2>/dev/null
-
-    if test $status -ne 0
-        set -Ue SSH_AGENT_PID
-        set -Ue SSH_AUTH_SOCK
+    if not ssh-add -l >/dev/null 2>/dev/null
+        # Agent is not running or is not accessible.
         eval (command ssh-agent -c | sed 's/setenv/set -Ux/')
         echo "ssh-agent has pid $SSH_AGENT_PID"
     end
