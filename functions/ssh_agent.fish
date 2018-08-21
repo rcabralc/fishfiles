@@ -3,7 +3,6 @@ function ssh_agent --description 'launch the ssh-agent and add identities'
 
     set -q SSH_AGENT_PID
         and kill -0 $SSH_AGENT_PID 2>/dev/null
-        and grep -q '^ssh-agent' /proc/$SSH_AGENT_PID/cmdline
 
     if test $status -ne 0
         set -Uxe SSH_AGENT_PID
