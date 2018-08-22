@@ -40,11 +40,6 @@ function fish_prompt
     set -g __fish_git_prompt_color_cleanstate green -o
 
     if not string match -e Android (uname -a) >/dev/null
-        set_color normal; printf $sep
-        set_color brown
-        printf "%s" (date "+%Hh%M")
-        set sep " "
-
         if command -v rbenv >/dev/null
             set rubyversion (rbenv version-name)
             if test $status -eq 0
