@@ -39,34 +39,53 @@ function fish_prompt
     set -g __fish_git_prompt_char_cleanstate ''
     set -g __fish_git_prompt_color_cleanstate green -o
 
+    set_color normal; printf $sep
+    set_color brown
+    printf "%s" (date "+%Hh%M")
+    set sep " "
+
+    if command -v rbenv >/dev/null
+        set rubyversion (rbenv version-name)
+        if test $status -eq 0
+            if test $rubyversion != 'system'
+                set_color normal; printf $sep
+                set_color grey
+                printf "$rubyversion"
+                set sep " "
+            end
+        else
+            set_color normal; printf $sep
+            set_color -o red
+            printf "bad Ruby" $sep
+            set sep " "
+        end
+    end
+
     if test $USER != $DEFAULT_USER
+        set_color normal; printf $sep
         set_color $fish_color_user
         printf "%s" $USER
-        set_color normal
-        set sep " "
+        test $host != $DEFAULT_HOST; and set sep "@"; or set sep " "
     end
 
     if test $host != $DEFAULT_HOST
         set_color $fish_color_host
-        printf "@%s" $host
-        set_color normal
-        set sep " "
-        set pathprefix ":"
+        printf "$sep%s" $host
+        set sep ":"
     end
 
     if test $pwd != '~'
         set_color $fish_color_cwd
-        printf "%s%s" $pathprefix $pwd
-        set_color normal
+        printf "$sep$pwd"
         set sep " "
     end
 
     if git rev-parse --show-toplevel 2>/dev/null 1>/dev/null
-        printf ":%s" (__fish_git_prompt "%s")
+        set_color brown; printf "@"
+        printf (__fish_git_prompt "%s")
         set sep " "
     end
 
-    set_color normal
     if test $last_status -ne 0
         set_color brown
         printf "[$last_status]"
@@ -74,7 +93,7 @@ function fish_prompt
     end
 
     set_color normal
-    printf "%s" $sep
+    printf $sep
     if test $fish_bind_mode != ''
         switch $fish_bind_mode
             case default
