@@ -60,6 +60,7 @@ function fish_prompt
                 printf "bad Ruby" $sep
                 set sep " "
             end
+            set_color normal
         end
 
         if test $USER != $DEFAULT_USER
@@ -67,11 +68,13 @@ function fish_prompt
             set_color $fish_color_user
             printf "%s" $USER
             test $host != $DEFAULT_HOST; and set sep "@"; or set sep " "
+            set_color normal
         end
 
         if test $host != $DEFAULT_HOST
             set_color $fish_color_host
             printf "$sep%s" $host
+            set_color normal
             set sep ":"
         end
     end
@@ -79,18 +82,21 @@ function fish_prompt
     if test $pwd != '~'
         set_color $fish_color_cwd
         printf "$sep$pwd"
+        set_color normal
         set sep " "
     end
 
     if git rev-parse --show-toplevel 2>/dev/null 1>/dev/null
         set_color brown; printf "@"
-        printf (__fish_git_prompt "%s")
+        __fish_git_prompt "%s"
+        set_color normal
         set sep " "
     end
 
     if test $last_status -ne 0
         set_color brown
         printf "[$last_status]"
+        set_color normal
         set sep " "
     end
 
