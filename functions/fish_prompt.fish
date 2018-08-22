@@ -39,39 +39,41 @@ function fish_prompt
     set -g __fish_git_prompt_char_cleanstate ''
     set -g __fish_git_prompt_color_cleanstate green -o
 
-    set_color normal; printf $sep
-    set_color brown
-    printf "%s" (date "+%Hh%M")
-    set sep " "
+    if not string match -e Android (uname -a) >/dev/null
+        set_color normal; printf $sep
+        set_color brown
+        printf "%s" (date "+%Hh%M")
+        set sep " "
 
-    if command -v rbenv >/dev/null
-        set rubyversion (rbenv version-name)
-        if test $status -eq 0
-            if test $rubyversion != 'system'
+        if command -v rbenv >/dev/null
+            set rubyversion (rbenv version-name)
+            if test $status -eq 0
+                if test $rubyversion != 'system'
+                    set_color normal; printf $sep
+                    set_color grey
+                    printf "$rubyversion"
+                    set sep " "
+                end
+            else
                 set_color normal; printf $sep
-                set_color grey
-                printf "$rubyversion"
+                set_color -o red
+                printf "bad Ruby" $sep
                 set sep " "
             end
-        else
-            set_color normal; printf $sep
-            set_color -o red
-            printf "bad Ruby" $sep
-            set sep " "
         end
-    end
 
-    if test $USER != $DEFAULT_USER
-        set_color normal; printf $sep
-        set_color $fish_color_user
-        printf "%s" $USER
-        test $host != $DEFAULT_HOST; and set sep "@"; or set sep " "
-    end
+        if test $USER != $DEFAULT_USER
+            set_color normal; printf $sep
+            set_color $fish_color_user
+            printf "%s" $USER
+            test $host != $DEFAULT_HOST; and set sep "@"; or set sep " "
+        end
 
-    if test $host != $DEFAULT_HOST
-        set_color $fish_color_host
-        printf "$sep%s" $host
-        set sep ":"
+        if test $host != $DEFAULT_HOST
+            set_color $fish_color_host
+            printf "$sep%s" $host
+            set sep ":"
+        end
     end
 
     if test $pwd != '~'
