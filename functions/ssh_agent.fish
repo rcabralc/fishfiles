@@ -16,6 +16,6 @@ function ssh_agent --description 'launch the ssh-agent and add identities'
             or echo ignored | \
                 env SSH_ASKPASS=$HOME/.config/fish/bin/askpass DISPLAY= \
                 ssh-add $identity \
-                >/dev/null
+                2>/dev/null
     end
 end
