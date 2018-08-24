@@ -37,7 +37,6 @@ mkdir -p ~/.local/bin
 set PATH ~/.local/bin $PATH
 test -x ~/.rbenv/bin; and set PATH ~/.rbenv/bin $PATH
 set -gx EDITOR nvim
-set -gx LESS FRX
 
 set fish_key_bindings fish_user_key_bindings
 fish_vi_cursor auto
