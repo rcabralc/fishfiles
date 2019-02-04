@@ -13,7 +13,7 @@ function ssh_agent --description 'launch the ssh-agent and add identities'
     # Agent is not running or is not accessible.
     test $status -eq 2; and eval (command ssh-agent -c | sed 's/setenv/set -Ux/')
 
-    for identity in (ls ~/.ssh/*.pub | sed 's/\.pub$//')
+    for identity in (find ~/.ssh/ -name '*.pub' | sed 's/\.pub$//')
         set -l fingerprint (ssh-keygen -lf $identity | awk '{print $2}')
         ssh-add -l | grep -q $fingerprint
             # pipe needed to remove terminal from ssh-add
