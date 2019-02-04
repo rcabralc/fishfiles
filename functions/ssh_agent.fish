@@ -1,5 +1,9 @@
 function ssh_agent --description 'launch the ssh-agent and add identities'
     command -v pass >/dev/null; or return
+    command -v ssh-agent >/dev/null; or return
+
+    # ~/.ssh exists and is accessible.
+    test -x ~/.ssh; or return
 
     # Un-shadow universal variables
     set -ge SSH_AGENT_PID
