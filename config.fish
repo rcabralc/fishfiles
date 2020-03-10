@@ -1,18 +1,23 @@
 set -gx DEFAULT_USER "rcabralc"
-set -gx DEFAULT_HOST "atrocious"
+set -gx DEFAULT_HOST "archrabl"
 set -gx fish_greeting ''
 set -gx GPG_TTY (tty)
 
 source ~/.config/fish/colors.fish
 
-# Install rbenv
-if test ! -d ~/.rbenv
-  git clone https://github.com/rbenv/rbenv.git ~/.rbenv
-  cd ~/.rbenv; and src/configure; and make -C src 2>/dev/null
-  git clone https://github.com/rbenv/ruby-build.git ~/.rbenv/plugins/ruby-build
-  cd
+# Install anyenv
+if test ! -d ~/.anyenv
+  git clone https://github.com/anyenv/anyenv ~/.anyenv
 end
 
+# # Install rbenv
+# if test ! -d ~/.rbenv
+#   git clone https://github.com/rbenv/rbenv.git ~/.rbenv
+#   cd ~/.rbenv; and src/configure; and make -C src 2>/dev/null
+#   git clone https://github.com/rbenv/ruby-build.git ~/.rbenv/plugins/ruby-build
+#   cd
+# end
+#
 # Basic environment vars
 
 if test -x "$HOME/go/bin" >/dev/null
@@ -36,16 +41,17 @@ end
 
 mkdir -p ~/.local/bin
 set PATH ~/.local/bin $PATH
-test -x ~/.rbenv/bin; and set PATH ~/.rbenv/bin $PATH
+set -Ux fish_user_paths $HOME/.anyenv/bin $fish_user_paths
+# test -x ~/.rbenv/bin; and set PATH ~/.rbenv/bin $PATH
 set -gx EDITOR nvim
 
 set fish_key_bindings fish_user_key_bindings
 fish_vi_cursor auto
 set -g fish_cursor_insert line blink
 
-status --is-interactive; and command -v rbenv >/dev/null;
-and source (~/.rbenv/bin/rbenv init - | psub)
-
+# status --is-interactive; and command -v rbenv >/dev/null;
+# and source (~/.rbenv/bin/rbenv init - | psub)
+#
 if command -v direnv >/dev/null
   eval (direnv hook fish)
 end
@@ -61,3 +67,6 @@ for f in (find ~/.config/fish/site/ -type f -name '*.fish' | sort)
 end
 
 dedup_path
+
+status --is-interactive; and command -v anyenv >/dev/null;
+and ~/.anyenv/bin/anyenv init - | source
