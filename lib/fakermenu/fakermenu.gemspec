@@ -31,5 +31,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency "faker"
   spec.add_dependency "cpf_faker"
   spec.add_development_dependency "bundler", "~> 1.15"
-  spec.add_development_dependency "rake", "~> 10.0"
+  spec.add_development_dependency "rake", "~> 12.3"
 end
