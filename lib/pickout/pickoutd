@@ -197,18 +197,17 @@ class ContextualLinewiseSocket(LinewiseSocket):
 
 
 class Server(QObject):
-    dispatched = pyqtSignal(Command)
-
-    def __init__(self, requests, logger):
+    def __init__(self, requests, menu, logger):
         super(Server, self).__init__()
         self._requests = requests
+        self._menu = menu
         self._logger = logger
 
     def run(self):
         while True:
             command = self._requests.get().command
             self._logger('received command: %r\n' % command)
-            self.dispatched.emit(command)
+            command.execute(self._menu)
 
 
 class Listener(QObject):
@@ -227,14 +226,11 @@ def run(logger):
     menu = Menu()
     requests = queue.SimpleQueue()
 
-    def resolve(command):
-        command.execute(menu)
-
     with LinewiseSocket.context(socket_file) as sock:
         logger('listening on ' + socket_file + '\n')
 
         server_thread = QThread()
-        server = Server(requests, logger=logger)
+        server = Server(requests, menu=menu, logger=logger)
         server.moveToThread(server_thread)
         server_thread.started.connect(server.run)
 
@@ -243,7 +239,6 @@ def run(logger):
         receiver.moveToThread(listener_thread)
         listener_thread.started.connect(receiver.run)
 
-        server.dispatched.connect(resolve)
         menu.finished.connect(server_thread.exit)
         menu.finished.connect(listener_thread.exit)
 
