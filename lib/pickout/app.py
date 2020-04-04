@@ -649,9 +649,8 @@ def interpolate_html(template, view, config):
     theme = apply_default_colors(view, config.get('theme', {}))
 
     for key, value in theme.items():
-        template = template.replace('%(' + key + ')s', value)
-    return template.\
-        replace('%(initial-value)s', '').replace('%(entries-class)s', '')
+        template = template.replace(f'%({key})s', value)
+    return template.replace('%(initial-value)s', '')
 
 
 class MenuApp(QObject):
