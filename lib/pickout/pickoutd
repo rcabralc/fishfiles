@@ -59,8 +59,7 @@ class KillCommand(Command):
 
 
 class Request:
-    def __init__(self, container, sock):
-        self.container = container
+    def __init__(self, sock):
         self.sock = sock
         self._command = None
         self._done = False
@@ -87,7 +86,6 @@ class Request:
     def done(self):
         if not self._done:
             self.sock.close()
-            self.container.task_done()
             self._done = True
         return self
 
@@ -222,12 +220,12 @@ class Listener(QObject):
     def run(self):
         while True:
             sock = self._sock.accept()
-            self._requests.put(Request(self._requests, sock))
+            self._requests.put(Request(sock))
 
 
 def run(logger):
     menu = Menu()
-    requests = queue.Queue()
+    requests = queue.SimpleQueue()
 
     def resolve(command):
         command.execute(menu)
