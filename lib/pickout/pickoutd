@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Usage:
-    pickoutd [--foreground | --keep-stderr]
+    pickoutd [--foreground] [--keep-stderr]
     pickoutd --kill
 
 Description:
@@ -21,7 +21,6 @@ from PyQt5.QtCore import QThread, QObject, pyqtSignal
 import daemon
 import json
 import os
-import queue
 import socket
 import sys
 
@@ -29,163 +28,149 @@ import sys
 socket_file = '/tmp/pickout.sock'
 
 
-class Command:
-    pass
+class PromptCommand:
+    def __init__(self, options, items):
+        self._options = options
+        self._items = items
 
-
-class PromptCommand(Command):
-    def __init__(self, request, data):
-        self._request = request
-        self._data = data
-
-    @property
-    def items(self):
-        return self._data.get('items', [])
-
-    @property
-    def options(self):
-        return self._data.get('options', {})
-
-    def execute(self, menu):
-        menu.prompt(self._request, self)
-
-
-class KillCommand(Command):
-    def __init__(self, request):
-        self._request = request
-
-    def execute(self, menu):
-        menu.kill(self._request, self)
-
-
-class Request:
-    def __init__(self, sock):
-        self.sock = sock
-        self._command = None
-        self._done = False
-
-    @property
-    def command(self):
-        if self._command is None:
-            data = self.sock.readline().strip(self.sock.separator)
-            if data == 'PROMPT':
-                data = dict(options=json.loads(self.sock.readline()), items=[])
-                item = self.sock.readline()
-                while item != self.sock.separator:
-                    data['items'].append(item)
-                    item = self.sock.readline()
-                self._command = PromptCommand(self, data)
-            elif data == 'KILL':
-                self._command = KillCommand(self)
-        return self._command
-
-    def respond(self, message):
-        self.sock.writeline(message)
-        return self.done()
-
-    def done(self):
-        if not self._done:
-            self.sock.close()
-            self._done = True
-        return self
-
-
-class Menu(QObject):
-    finished = pyqtSignal()
-
-    def __init__(self):
-        super(Menu, self).__init__()
-
-        self._app = MenuApp()
-        self._app.minimize()
-        self._current_request = None
-
-        def respond(result):
-            self._app.minimize()
-            if self._current_request is not None:
-                self._current_request.respond(result)
-                self._current_request = None
-
-        def cancel():
-            if self._current_request is not None:
-                self._current_request.done()
-                self._current_request = None
-
-        self._app.selected.connect(respond)
-        self._app.dismissed.connect(cancel)
-        self._app.dismissed.connect(self._app.minimize)
-
-    def exec_(self):
-        self._app.exec_()
-        return self.finished.emit()
-
-    def prompt(self, request, command):
-        self._current_request = request
-        self._app.restore()
-
+    def execute(self, app, conn, logger):
+        def done(result):
+            if result:
+                logger(f'result: {result}\n')
+                conn.writeline(result)
+            conn.close()
+            app.hide()
         try:
-            self._app.setup(command.items, **command.options)
+            menu = app.setup(self._items, **self._options)
+            menu.selected.connect(done)
         except:
-            request.done()
+            conn.close()
             raise
 
-    def kill(self, request, command):
-        self.finished.emit()
-        self._app.quit()
+    def __repr__(self):
+        return f'PROMPT with {len(self._items)} items: {self._options!r}'
+
+    def serialize(self):
+        options = json.dumps(self._options)
+        items = '\n'.join(self._items)
+        return f'PROMPT\n{options}\n{items}\n\n'.encode('utf-8')
+
+    @classmethod
+    def desserialize(cls, header, io):
+        if header != 'PROMPT': return
+        options = json.loads(io.readline().strip('\n'))
+        item = io.readline().strip('\n')
+        items = []
+        while item:
+            items.append(item)
+            item = io.readline().strip('\n')
+        return (cls, (options, items))
 
 
-class LinewiseSocket:
-    def __init__(self, socket_file, separator=b'\n', encoding='utf-8'):
-        self._socket_file = socket_file
+class KillCommand:
+    def execute(self, app, conn, _logger):
+        conn.close()
+        app.quit()
+
+    def __repr__(self):
+        return 'KILL'
+
+    def serialize(self):
+        return b'KILL\n'
+
+    @classmethod
+    def desserialize(cls, header, io):
+        return (cls, ()) if header == 'KILL' else None
+
+
+class AppWorker(QObject):
+    def __init__(self, app, logger):
+        super(AppWorker, self).__init__()
+        self._app = app
+        self._logger = logger
+
+    def execute(self, command, conn):
+        command.execute(self._app, conn, self._logger)
+
+
+class LinewiseConnection:
+    def __init__(self, conn, separator=b'\n', encoding='utf-8'):
+        self._conn = conn
         self._sep = separator
-        self.encoding = encoding
-        self.separator = separator.decode(self.encoding)
+        self._encoding = encoding
         self._rbuffer = b''
 
-    def readline(self):
+    def readline(self, strip=False):
         message = self._rbuffer
         newline = message.find(self._sep)
+
         while not ~newline:
-            chunk = self._sock.recv(4096)
+            chunk = self._conn.recv(4096)
             if not chunk:
                 raise RuntimeError('socket connection broken')
-            message = message + chunk
+            message += chunk
             newline = message.find(self._sep)
 
         newline += 1
         self._rbuffer = message[newline:]
-        return message[:newline].decode(self.encoding)
+        line = message[:newline]
+        if strip:
+            line = line.strip(self._sep)
+        return line.decode(self._encoding)
 
     def writeline(self, message):
-        message = message.encode(self.encoding)
+        message = message.encode(self._encoding)
         if not message.endswith(self._sep):
             message = message + self._sep
-        self._sock.sendall(message)
-
-    def accept(self):
-        sock, _ = self._sock.accept()
-        lsock = LinewiseSocket(self._socket_file)
-        lsock._sock = sock
-        return lsock
+        self._conn.sendall(message)
 
     def close(self):
-        self._sock.close()
+        self._conn.close()
+
+
+class Channel(QObject):
+    received = pyqtSignal(object, LinewiseConnection)
+
+    def __init__(self, socket_file, logger):
+        super(Channel, self).__init__()
+        self._socket_file = socket_file
+        self._logger = logger
+        self._unlink()
 
     @classmethod
-    def context(cls, *args, **kw):
-        return ContextualLinewiseSocket(*args, **kw)
+    def send(cls, command):
+        if not os.path.exists(socket_file):
+            return 1
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        sock.connect(socket_file)
+        sock.sendall(command.serialize())
+        sock.close()
+        return 0
 
+    def receive(self):
+        while True:
+            conn, _ = self._sock.accept()
+            conn = LinewiseConnection(conn)
+            header = conn.readline(strip=True)
+            for klass in [KillCommand, PromptCommand]:
+                params = klass.desserialize(header, conn)
+                if params is not None:
+                    cls, args = params
+                    command = cls(*args)
+                    self._logger(f'received: {command!r}\n')
+                    self.received.emit(command, conn)
+                    break
 
-class ContextualLinewiseSocket(LinewiseSocket):
     def __enter__(self):
-        self._unlink()
         self._sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self._sock.bind(self._socket_file)
         self._sock.listen(1)
+        self._logger('listening on ' + self._socket_file + '\n')
         return self
 
     def __exit__(self, type, value, traceback):
-        self.close()
+        self._logger('exiting\n')
+        self._sock.close()
         self._unlink()
 
     def _unlink(self):
@@ -194,73 +179,25 @@ class ContextualLinewiseSocket(LinewiseSocket):
         except OSError:
             if os.path.exists(self._socket_file):
                 raise
-
-
-class Server(QObject):
-    def __init__(self, requests, menu, logger):
-        super(Server, self).__init__()
-        self._requests = requests
-        self._menu = menu
-        self._logger = logger
-
-    def run(self):
-        while True:
-            command = self._requests.get().command
-            self._logger('received command: %r\n' % command)
-            command.execute(self._menu)
-
-
-class Listener(QObject):
-    def __init__(self, sock, requests):
-        super(Listener, self).__init__()
-        self._sock = sock
-        self._requests = requests
-
-    def run(self):
-        while True:
-            sock = self._sock.accept()
-            self._requests.put(Request(sock))
+        finally:
+            self._sock = None
 
 
 def run(logger):
-    menu = Menu()
-    requests = queue.SimpleQueue()
+    app = MenuApp()
 
-    with LinewiseSocket.context(socket_file) as sock:
-        logger('listening on ' + socket_file + '\n')
+    with Channel(socket_file, logger=logger) as channel:
+        channel_thread = QThread()
+        channel.moveToThread(channel_thread)
+        channel_thread.started.connect(channel.receive)
 
-        server_thread = QThread()
-        server = Server(requests, menu=menu, logger=logger)
-        server.moveToThread(server_thread)
-        server_thread.started.connect(server.run)
+        worker = AppWorker(app, logger=logger)
+        channel.received.connect(worker.execute)
 
-        listener_thread = QThread()
-        receiver = Listener(sock, requests)
-        receiver.moveToThread(listener_thread)
-        listener_thread.started.connect(receiver.run)
+        app.finished.connect(channel_thread.exit)
+        channel_thread.start()
 
-        menu.finished.connect(server_thread.exit)
-        menu.finished.connect(listener_thread.exit)
-
-        server_thread.start()
-        logger('started server thread\n')
-
-        listener_thread.start()
-        logger('started receiver thread\n')
-
-        return menu.exec_()
-
-
-def kill():
-    if not os.path.exists(socket_file):
-        return 1
-
-    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    sock.connect(socket_file)
-    sock.sendall(b'KILL\n')
-    sock.close()
-
-    return 0
+        return app.exec_()
 
 
 def main(args):
@@ -270,15 +207,12 @@ def main(args):
     if keep_stderr:
         stderr = sys.stderr
         log_stream = stderr
-    elif foreground:
-        stderr = None
-        log_stream = sys.stdout
     else:
         stderr = None
         log_stream = None
 
     if args['--kill']:
-        return sys.exit(kill())
+        return sys.exit(Channel.send(KillCommand()))
 
     with daemon.DaemonContext(detach_process=not foreground,
                               stderr=stderr):
