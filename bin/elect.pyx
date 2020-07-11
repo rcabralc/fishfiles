@@ -1,8 +1,22 @@
+# These optimizations were got from
+# https://suzyahyah.github.io/cython/programming/2018/12/01/Gotchas-in-Cython.html
+
+#cython: boundscheck=False
+#cython: nonecheck=False
+#cython: wraparound=False
+#cython: infertypes=True
+#cython: initializedcheck=False
+#cython: cdivision=True
+
+#cython: language_level=3
+
 import functools
 import operator
 import re
 import sre_constants
 import sys
+
+from cython.view cimport array
 
 
 class Pattern(object):
@@ -50,7 +64,7 @@ class ExactPattern(SmartCasePattern):
 
     def best_match(self, term):
         if not self.length:
-            return UnhighlightedMatch
+            return Match(term, [])
 
         value = term.value
         if self.ignore_case:
@@ -59,66 +73,102 @@ class ExactPattern(SmartCasePattern):
         if self.value not in value:
             return
 
-        return Match.from_exact(value, self)
+        indices = []
+
+        current = value.find(self.value)
+        for index in range(current, current + self.length):
+            indices.append(index)
+
+        return Match(term, indices)
 
 
 class FuzzyPattern(SmartCasePattern):
     prefix = '@*'
 
     def best_match(self, term):
-        cdef int i, j, length, best, best_index, start_index = 0, min_index = 0
-        cdef int current_length
-        cdef str p, c, value
-        cdef list m, row, last_row
+        cdef int pi, vi
+        cdef str value, pattern
+        cdef list indices
+        cdef int[:] lengths, match_lengths
+        cdef int[:,:] m
 
-        if not self.length:
-            return UnhighlightedMatch
+        cdef int p_length = self.length
+
+        if not p_length:
+            return Match(term, [])
+
+        cdef int v_length = term.length
+        cdef int max_best_length = v_length + 1
+        cdef int best_length = 0
+        cdef int match_len
+        cdef int r_limit = v_length - p_length
+        cdef int l_limit = 0
 
         value = term.value
         if self.ignore_case:
             value = value.lower()
-        length = term.length
-        last_row = [0] * (length + 1)
-        m = [last_row]
         pattern = self.value
-        best_index = length
 
-        for i in range(self.length):
-            p = pattern[i]
-            row = [None] * (length + 1)
-            current_length = 0
-            start_index = min_index
-            for j in range(start_index, length):
-                c = value[j]
-                prev = last_row[j]
-                if prev is not None: current_length = prev
-                current_length += 1
-                if c != p: continue
-                row[j + 1] = current_length
-                if min_index == start_index:
-                    min_index = j + 1
-            if min_index == start_index:
-                return
-            m.append(row)
-            last_row = row
+        m = array(shape=(p_length, v_length),
+                  itemsize=sizeof(int),
+                  format='i')
 
-        best = length + 1
-        for i in range(start_index, length):
-            if last_row[i + 1] is None: continue
-            if last_row[i + 1] < best:
-                best = last_row[i + 1]
-                best_index = i
+        for pi in range(p_length):
+            lengths = m[pi]
+            p = pattern[pi]
+            best_length = max_best_length
+            vi = l_limit
+            while vi <= r_limit:
+                if value[vi] == p:
+                    # A match.
+                    # If we didn't find a match for `p` so far, bump `l_limit`
+                    # to `vi`, as there's no point checking past of it.  Note
+                    # that it'll be increased by one in the end of the outer
+                    # loop.
+                    if best_length == max_best_length: l_limit = vi
 
-        if best_index == -1: return
+                    # Add new match from increased length of previous match.
+                    # If `pi` is zero `match_lengths` is not initialized, but
+                    # we can fallback to 1.  Once we improve `best_length`
+                    # below, `match_lengths` will be initialized, otherwise
+                    # this method will just return.
+                    match_len = match_lengths[vi - 1] + 1 if pi else 1
+                    lengths[vi] = match_len
+                    best_length = min(best_length, match_len)
+                elif best_length != max_best_length:
+                    # Otherwise, if we already found a match for `p`
+                    # (`best_length` for this `p` is not the maximum), just
+                    # increase length from the previous iteration.  In this
+                    # case, we know `vi - 1` is not out-of-bounds because we
+                    # must have completed at least one iteration.
+                    lengths[vi] = lengths[vi - 1] + 1
+                # Otherwise, continue looping until the first match for `p` is
+                # found.
+                vi += 1
 
+            # If we didn't lower `best_length`, we failed to find a match for
+            # `p`.
+            if best_length == max_best_length: return
+            match_lengths = lengths
+            r_limit += 1
+            l_limit += 1
+
+        pi = p_length - 1
+        p = pattern[pi]
         indices = []
-        for i in reversed(range(len(self.value))):
-            indices.insert(0, best_index)
-            while m[i][best_index] is None:
-                best_index -= 1
-            best_index = best_index - 1
+        for vi in range(v_length - 1, -1, -1):
+            # The last row of lengths might contain lengths greater than the
+            # best, so we just skip them.  We skip also when we're not in a
+            # match.
+            if m[pi, vi] > best_length or p != value[vi]: continue
+            # We're in a match.
+            indices.insert(0, vi)
+            # Break if we tested all pattern chars.
+            if not pi: break
+            pi -= 1
+            p = pattern[pi]
 
-        return Match(indices)
+        return Match(term, indices)
 
 
 class InverseExactPattern(ExactPattern):
@@ -126,7 +176,7 @@ class InverseExactPattern(ExactPattern):
 
     def best_match(self, term):
         if not self.length:
-            return UnhighlightedMatch
+            return Match(term, [])
 
         value = term.value
         if self.ignore_case:
@@ -135,7 +185,7 @@ class InverseExactPattern(ExactPattern):
         if self.value in value:
             return
 
-        return UnhighlightedMatch
+        return Match(term, [])
 
 
 class RegexPattern(Pattern):
@@ -143,6 +193,7 @@ class RegexPattern(Pattern):
 
     def __init__(self, pattern, ignore_bad_patterns=True):
         super(RegexPattern, self).__init__(pattern)
+        self._can_match = False
         if pattern:
             self.value = '(?iu)' + pattern
             self._can_match = True
@@ -155,12 +206,12 @@ class RegexPattern(Pattern):
 
     def best_match(self, term):
         if not self._can_match:
-            return UnhighlightedMatch
+            return Match(term, [])
 
         value = term.value
         match = self._re.search(value)
         if match is not None:
-            return Match.from_re(match)
+            return Match(term, list(range(*match.span())))
 
         return
 
@@ -199,32 +250,12 @@ cdef class Match:
     cdef public int length
     cdef public tuple indices
 
-    def __init__(self, indices):
+    def __init__(self, term, indices):
         if indices:
-            self.length = indices[-1] - indices[0] + 1
+            self.length = indices[len(indices) - 1] - indices[0] + 1
         else:
-            self.length = 0
+            self.length = term.length
         self.indices = tuple(indices)
-
-    @classmethod
-    def from_exact(cls, value, pattern):
-        indices = []
-
-        if pattern.ignore_case:
-            value = value.lower()
-
-        current = value.find(pattern.value)
-        for index in range(current, current + pattern.length):
-            indices.append(index)
-
-        return cls(indices)
-
-    @classmethod
-    def from_re(cls, match):
-        return cls(list(range(*match.span())))
-
-
-UnhighlightedMatch = Match([])
 
 
 cdef class CompositeMatch(object):
@@ -277,9 +308,6 @@ cdef class CompositeMatch(object):
             yield (start, end)
 
 
-NoMatch = CompositeMatch(Term(0, ''), ())
-
-
 class Streaks(object):
     def __init__(self, indices):
         self.indices = frozenset(indices)
@@ -294,14 +322,14 @@ class Streaks(object):
         chunks = [[head]]
         (chunk,) = chunks
         for i in tail:
-            if i == chunk[-1] + 1:
+            if i == chunk[len(chunk) - 1] + 1:
                 chunk.append(i)
             else:
                 chunk = [i]
                 chunks.append(chunk)
 
         for chunk in chunks:
-            yield chunk[0], chunk[-1] + 1
+            yield chunk[0], chunk[len(chunk) - 1] + 1
 
     def merge(self, other):
         return type(self)(self.indices.union(other.indices))
