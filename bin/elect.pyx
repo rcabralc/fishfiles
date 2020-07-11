@@ -139,7 +139,7 @@ cdef class FuzzyPattern(object):
         cdef int v_length = term.length
         cdef int max_best_length = v_length + 1
         cdef int best_length = 0
-        cdef int match_len
+        cdef int match_length
         cdef int r_limit = v_length - p_length
         cdef int l_limit = 0
 
@@ -171,9 +171,9 @@ cdef class FuzzyPattern(object):
                     # we can fallback to 1.  Once we improve `best_length`
                     # below, `match_lengths` will be initialized, otherwise
                     # this method will just return.
-                    match_len = match_lengths[vi - 1] + 1 if pi else 1
-                    lengths[vi] = match_len
-                    best_length = min(best_length, match_len)
+                    match_length = match_lengths[vi - 1] + 1 if pi else 1
+                    lengths[vi] = match_length
+                    best_length = min(best_length, match_length)
                 elif best_length != max_best_length:
                     # Otherwise, if we already found a match for `p`
                     # (`best_length` for this `p` is not the maximum), just
