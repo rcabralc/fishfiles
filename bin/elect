@@ -26,8 +26,7 @@ Options:
 
     --sort-limit=LIMIT
         Sort output only if the number of results is below LIMIT.  Set to zero
-        to not sort the output.  Negative numbers are silently ignored, as if
-        there were no limit.  There's no default value, so output is always
+        to not sort the output.  There's no default value, so output is always
         sorted by default.
 
         If this option is not set or is set to a value greater than zero, input
