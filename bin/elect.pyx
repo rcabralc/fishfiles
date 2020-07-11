@@ -82,10 +82,49 @@ class ExactPattern(SmartCasePattern):
         return Match(term, indices)
 
 
-class FuzzyPattern(SmartCasePattern):
+cdef class FuzzyPattern(object):
+    cdef public str value
+    cdef public int length
+    cdef public bint ignore_case
+
     prefix = '@*'
 
-    def best_match(self, term):
+    def __init__(self, str pattern):
+        cdef str pattern_lower
+
+        self.value = pattern
+
+        if pattern:
+            self.length = len(pattern)
+        else:
+            self.length = 0
+
+        pattern_lower = pattern.lower()
+
+        if pattern_lower != pattern:
+            self.value = pattern
+            self.ignore_case = False
+        else:
+            self.value = pattern_lower
+            self.ignore_case = True
+
+    def __eq__(self, other):
+        if isinstance(other, type(self)):
+            return self.value == other.value
+        return False
+
+    def __hash__(self):
+        return hash(self.value)
+
+    def __len__(self):
+        return self.length
+
+    def __bool__(self):
+        return self.length > 0
+
+    __nonzero__ = __bool__
+
+    def best_match(self, Term term):
         cdef int pi, vi
         cdef str value, pattern
         cdef list indices
@@ -237,8 +276,10 @@ cdef class CompositePattern(object):
         return CompositeMatch(term, tuple(matches))
 
 
-class Term(object):
-    __slots__ = ('id', 'value', 'length')
+cdef class Term(object):
+    cdef public int id
+    cdef public str value
+    cdef public int length
 
     def __init__(self, id, value):
         self.id = id
@@ -250,7 +291,7 @@ cdef class Match:
     cdef public int length
     cdef public tuple indices
 
-    def __init__(self, term, indices):
+    def __init__(self, Term term, list indices):
         if indices:
             self.length = indices[len(indices) - 1] - indices[0] + 1
         else:
@@ -259,8 +300,8 @@ cdef class Match:
 
 
 cdef class CompositeMatch(object):
-    cdef public object term
-    cdef public object id
+    cdef public Term term
+    cdef public int id
     cdef public str value
     cdef public tuple rank
     cdef tuple _matches
@@ -375,7 +416,7 @@ patternTypes = [
 ]
 
 def make_pattern(pattern):
-    if isinstance(pattern, Pattern):
+    if isinstance(pattern, Pattern) or isinstance(pattern, FuzzyPattern):
         return pattern
     for patternType in patternTypes:
         if pattern.startswith(patternType.prefix):
