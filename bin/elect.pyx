@@ -15,13 +15,14 @@ import operator
 import re
 import sre_constants
 import sys
+import unicodedata
 
 from cython.view cimport array
 
 
 class Pattern(object):
     def __init__(self, pattern):
-        self.value = pattern
+        self.value = unicodedata.normalize('NFKD', pattern)
 
         if pattern:
             self.length = len(pattern)
@@ -49,7 +50,7 @@ class SmartCasePattern(Pattern):
     def __init__(self, pattern):
         super(SmartCasePattern, self).__init__(pattern)
 
-        pattern_lower = pattern.lower()
+        pattern_lower = self.value.casefold()
 
         if pattern_lower != pattern:
             self.value = pattern
@@ -68,7 +69,7 @@ class ExactPattern(SmartCasePattern):
 
         value = term.value
         if self.ignore_case:
-            value = value.lower()
+            value = value.casefold()
 
         if self.value not in value:
             return
@@ -92,14 +93,14 @@ cdef class FuzzyPattern(object):
     def __init__(self, str pattern):
         cdef str pattern_lower
 
-        self.value = pattern
+        self.value = unicodedata.normalize('NFKD', pattern)
 
         if pattern:
             self.length = len(pattern)
         else:
             self.length = 0
 
-        pattern_lower = pattern.lower()
+        pattern_lower = pattern.casefold()
 
         if pattern_lower != pattern:
             self.value = pattern
@@ -145,7 +146,7 @@ cdef class FuzzyPattern(object):
 
         value = term.value
         if self.ignore_case:
-            value = value.lower()
+            value = value.casefold()
         pattern = self.value
 
         m = array(shape=(p_length, v_length),
@@ -218,7 +219,7 @@ class InverseExactPattern(ExactPattern):
 
         value = term.value
         if self.ignore_case:
-            value = value.lower()
+            value = value.casefold()
 
         if self.value in value:
             return
@@ -282,7 +283,7 @@ cdef class Term(object):
 
     def __init__(self, id, value):
         self.id = id
-        self.value = value
+        self.value = unicodedata.normalize('NFKD', value)
         self.length = len(value)
 
 
