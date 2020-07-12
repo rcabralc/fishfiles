@@ -172,7 +172,8 @@ cdef class FuzzyPattern(object):
                     # this method will just return.
                     match_length = match_lengths[vi - 1] + 1 if pi else 1
                     lengths[vi] = match_length
-                    best_length = min(best_length, match_length)
+                    if match_length < best_length:
+                        best_length = match_length
                 elif best_length != max_best_length:
                     # Otherwise, if we already found a match for `p`
                     # (`best_length` for this `p` is not the maximum), just
