@@ -125,7 +125,7 @@ cdef class FuzzyPattern(object):
 
     __nonzero__ = __bool__
 
-    def best_match(self, Term term):
+    cdef Match best_match(self, Term term):
         cdef int pi, vi
         cdef str value, pattern
         cdef list indices
@@ -257,13 +257,29 @@ class RegexPattern(Pattern):
 
 cdef class CompositePattern(object):
     cdef list _patterns
+    cdef list _fuzzy_patterns
 
     def __init__(self, patterns):
-        self._patterns = patterns
+        self._patterns = []
+        self._fuzzy_patterns = []
+        for p in patterns:
+            if isinstance(p, FuzzyPattern):
+                self._fuzzy_patterns.append(p)
+            else:
+                self._patterns.append(p)
 
-    cpdef CompositeMatch match(self, term):
+    cdef CompositeMatch match(self, Term term):
         cdef Match best_match
-        matches = []
+        cdef FuzzyPattern fuzzy_pattern
+        cdef list matches = []
+
+        for fuzzy_pattern in self._fuzzy_patterns:
+            best_match = fuzzy_pattern.best_match(term)
+
+            if best_match is None:
+                return
+
+            matches.append(best_match)
 
         for pattern in self._patterns:
             best_match = pattern.best_match(term)
@@ -281,7 +297,7 @@ cdef class Term(object):
     cdef public str value
     cdef public int length
 
-    def __init__(self, id, value):
+    def __cinit__(self, int id, str value not None):
         self.id = id
         self.value = unicodedata.normalize('NFKD', value)
         self.length = len(value)
@@ -291,7 +307,7 @@ cdef class Match:
     cdef public int length
     cdef public tuple indices
 
-    def __init__(self, Term term, list indices):
+    def __cinit__(self, Term term not None, list indices not None):
         if indices:
             self.length = indices[len(indices) - 1] - indices[0] + 1
         else:
@@ -306,7 +322,7 @@ cdef class CompositeMatch(object):
     cdef public tuple rank
     cdef tuple _matches
 
-    def __init__(self, term, matches):
+    def __cinit__(self, Term term not None, tuple matches not None):
         self.term = term
         self.id = term.id
         self.value = term.value
@@ -380,7 +396,18 @@ class Contest(object):
     def __init__(self, *patterns):
         self.pattern = CompositePattern(list(patterns))
 
-    def rank(self, matches, **kw):
+    def elect(self, terms not None, **kw):
+        cdef Term t
+        cdef CompositeMatch m
+        cdef CompositePattern p = self.pattern
+        cdef list matches = []
+        for t in terms:
+            m = p.match(t)
+            if m is not None:
+                matches.append(m)
+        return self.rank(matches, **kw)
+
+    def rank(self, list matches not None, **kw):
         limit = kw.get('limit', None)
         sort_limit = kw.get('sort_limit', None)
         key = operator.attrgetter('rank')
@@ -388,9 +415,9 @@ class Contest(object):
         if sort_limit is None:
             processed_matches = sorted(matches, key=key)
         elif sort_limit <= 0:
-            processed_matches = list(matches)
+            processed_matches = matches
         else:
-            processed_matches = list(matches)
+            processed_matches = matches
             if len(processed_matches) < sort_limit:
                 processed_matches = sorted(processed_matches, key=key)
 
@@ -401,11 +428,6 @@ class Contest(object):
             processed_matches = list(reversed(processed_matches))
 
         return processed_matches
-
-    def elect(self, terms, **kw):
-        match = self.pattern.match
-        matches = (m for m in (match(t) for t in terms) if m is not None)
-        return self.rank(matches, **kw)
 
 
 patternTypes = [
