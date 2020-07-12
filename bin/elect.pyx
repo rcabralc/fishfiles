@@ -202,7 +202,7 @@ cdef class FuzzyPattern(object):
             # We're in a match.
             indices.insert(0, vi)
             # Break if we tested all pattern chars.
-            if not pi: break
+            if pi == 0: break
             pi -= 1
             p = pattern[pi]
 
