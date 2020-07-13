@@ -14,19 +14,22 @@
         width: 0;
       }
 
+      ::selection {
+        background-color: #555;
+        background-color: rgb(%(entries-hl-background-color)s);
+        color: lime;
+        color: rgb(%(entries-hl-color)s);
+      }
+
       html {
         background-color: #333;
-        background-color: %(background-color)s;
+        background-color: rgb(%(background-color)s);
 
         color: #ddd;
-        color: %(color)s;
+        color: rgb(%(color)s);
 
-        font-family: sans-serif;
-        font-family: %(font-family)s;
-
+        font: message-box;
         font-size: 16px;
-        font-size: %(font-size)s;
-
         line-height: 2;
         -webkit-font-feature-settings: "kern" on, "liga" on, "clig" on, "onum" on;
         font-feature-settings: "kern" on, "liga" on, "clig" on, "onum" on;
@@ -43,10 +46,7 @@
 
       #prompt-box {
         display: table;
-
-        font-size: 100%;
-        font-size: %(prompt-font-size)s;
-
+        font-size: 20px;
         width: 100%;
       }
 
@@ -55,11 +55,7 @@
       }
 
       #prompt-box .prompt {
-        background-color: #999;
-        background-color: %(prompt-background-color)s;
-
-        color: black;
-        color: %(prompt-color)s;
+        color: rgb(%(prompt-color)s);
 
         box-sizing: border-box;
         display: table-cell;
@@ -69,12 +65,8 @@
       }
 
       #prompt-box.over-limit .prompt {
-        background-color: inherit;
-        background-color: %(prompt-background-color)s;
-        background-color: %(prompt-over-limit-background-color)s;
-
         color: orange;
-        color: %(prompt-over-limit-color)s;
+        color: rgb(%(prompt-over-limit-color)s);
       }
 
       .input-wrapper {
@@ -82,21 +74,10 @@
       }
 
       .input {
-        background-color: #666;
-        background-color: %(input-background-color)s;
-
+        background-color: transparent;
         box-sizing: border-box;
-
-        color: white;
-        color: %(input-color)s;
-
-
-        font-family: inherit;
-        font-family: %(input-font-family)s;
-
+        color: inherit;
         font-size: 100%;
-        font-size: %(input-font-size)s;
-
         border: none;
         line-height: 2.5;
         margin: 0;
@@ -106,14 +87,14 @@
 
       .input.history-mode {
         color: orange;
-        color: %(input-history-color)s;
+        color: rgb(%(input-history-color)s);
       }
 
       #prompt-box.not-found .input {
-        background-color: %(input-not-found-background-color)s;
+        background-color: rgb(%(input-not-found-background-color)s);
 
         color: orange;
-        color: %(input-not-found-color)s;
+        color: rgb(%(input-not-found-color)s);
       }
 
       .input:focus {
@@ -121,12 +102,8 @@
       }
 
       .counters {
-        background-color: #666;
-        background-color: %(input-background-color)s;
-
-        color: white;
-        color: %(input-color)s;
-        color: %(counters-color)s;
+        color: rgba(255,255,255,0.6);
+        color: rgba(%(color)s,0.6);
 
         box-sizing: border-box;
         display: table-cell;
@@ -142,14 +119,9 @@
       }
 
       #entries {
-        font-family: inherit;
-        font-family: %(entries-font-family)s;
-
         font-size: 100%;
-        font-size: %(entries-font-size)s;
-
-        list-style-type: none;
         height: 100%;
+        list-style-type: none;
         margin: 0;
         overflow-y: scroll;
         padding: 0;
@@ -179,70 +151,53 @@
 
       #entries li {
         background-color: #333;
-        background-color: %(entries-background-color)s;
+        background-color: rgb(%(entries-background-color)s);
         color: #ddd;
-        color: %(entries-color)s;
+        color: rgb(%(entries-color)s);
+        display: flow-root;
         padding: 0.5em;
-        position: relative;
-        text-shadow: %(entries-text-shadow);
         transition: all 0.2s;
       }
 
-      #entries li:nth-child(2n + 1) {
+      #entries li:nth-child(2n) {
         background-color: #3f3f3f;
-        background-color: %(entries-background-color)s;
-        background-color: %(entries-alternate-background-color)s;
-        color: #ddd;
-        color: %(entries-color)s;
-        color: %(entries-alternate-color)s;
-      }
-
-      #entries.preformatted li {
-        font-family: monospace;
-        font-family: %(entries-preformatted-font-family)s;
-
-        white-space: pre;
+        background-color: rgb(%(entries-background-color)s);
+        background-color: rgb(%(entries-alternate-background-color)s);
       }
 
       #entries li .hl {
         background-color: #555;
-        background-color: %(entries-hl-background-color)s;
+        background-color: rgb(%(entries-hl-background-color)s);
         color: lime;
-        color: %(entries-hl-color)s;
+        color: rgb(%(entries-hl-color)s);
         font-weight: bold;
         transition: all 0.2s;
       }
 
       #entries li:nth-child(2n + 1) .hl {
         background-color: #555;
-        background-color: %(entries-hl-background-color)s;
-        background-color: %(entries-alternate-hl-background-color)s;
+        background-color: rgb(%(entries-hl-background-color)s);
         color: lime;
-        color: %(entries-hl-color)s;
-        color: %(entries-alternate-hl-color)s;
+        color: rgb(%(entries-hl-color)s);
       }
 
-      #entries li.selected.selected {
+      #entries li.selected {
         background-color: #444;
-        background-color: %(selected-entry-background-color)s;
+        background-color: rgb(%(entries-hl-background-color)s);
         color: white;
-        color: %(selected-entry-color)s;
+        color: rgb(%(entries-hl-color)s);
       }
 
-      #entries li.selected.selected .hl {
-        background-color: inherit;
-        background-color: %(selected-entry-hl-background-color)s;
-        color: inherit;
-        color: %(selected-entry-hl-color)s;
+      #entries li.selected .subtext {
+        color: rgba(%(color)s,0.85);
       }
 
       #entries::after {
-        background-image:
-          linear-gradient(to bottom, %(entries-background-color-gradient-start)s 25%, %(entries-background-color-gradient-end)s);
+        background-image: linear-gradient(to bottom, rgba(%(background-color)s,0) 25%, rgba(%(background-color)s,0.6));
         bottom: 0;
         content: "";
-        display: block;
         left: 0;
+        pointer-events: none;
         position: absolute;
         right: 0;
         top: 0;

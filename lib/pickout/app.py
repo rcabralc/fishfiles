@@ -521,44 +521,33 @@ class MainView(QWebView):
 
 
 def default_colors(palette):
-    def color(role_name, a=1.0):
+    def color(role_name):
         role = getattr(QPalette, role_name)
         c = palette.color(role)
-        return "rgba(%d,%d,%d,%f)" % (c.red(), c.green(), c.blue(), float(a))
+        return "%d,%d,%d" % (c.red(), c.green(), c.blue())
 
-    def disabled(role_name, a=1.0):
+    def disabled(role_name):
         role = getattr(QPalette, role_name)
         c = palette.color(QPalette.Disabled, role)
-        return "rgba(%d,%d,%d,%f)" % (c.red(), c.green(), c.blue(), float(a))
+        return "%d,%d,%d" % (c.red(), c.green(), c.blue())
 
-    def inactive(role_name, a=1.0):
+    def inactive(role_name):
         role = getattr(QPalette, role_name)
         c = palette.color(QPalette.Inactive, role)
-        return "rgba(%d,%d,%d,%f)" % (c.red(), c.green(), c.blue(), float(a))
+        return "%d,%d,%d" % (c.red(), c.green(), c.blue())
 
     return {
-        "background-color": color('Base'),
-        "color": color('Text'),
-        "prompt-background-color": color('Base'),
+        "background-color": color('Window'),
+        "color": color('WindowText'),
         "prompt-color": color('Link'),
         "prompt-over-limit-color": color('LinkVisited'),
-        "input-background-color": color('Base'),
-        "input-color": color('Text'),
-        "input-not-found-color": disabled('Text'),
-        "input-history-color": color('Text'),
-        "counters-color": inactive('Text'),
-        "entries-background-color-gradient-start": color('Base', 0),
-        "entries-background-color-gradient-end": color('Base', 0),
+        "input-not-found-color": disabled('WindowText'),
+        "input-history-color": color('Link'),
         "entries-background-color": color('Base'),
         "entries-alternate-background-color": color('AlternateBase'),
-        "entries-color": inactive('Text'),
-        "entries-alternate-color": inactive('Text'),
+        "entries-color": color('Text'),
         "entries-hl-background-color": color('Highlight'),
-        "entries-alternate-hl-background-color": color('Highlight'),
         "entries-hl-color": color('HighlightedText'),
-        "entries-alternate-hl-color": color('HighlightedText'),
-        "selected-entry-background-color": color('Highlight'),
-        "selected-entry-color": color('HighlightedText'),
     }
 
 
