@@ -165,6 +165,32 @@
         background-color: rgb(%(entries-alternate-background-color)s);
       }
 
+      #entries li p {
+        margin-top: 0;
+        margin-bottom: 0;
+      }
+
+      #entries li img {
+        float: left;
+        height: 16px;
+        height: %s(icon-size)s;
+        margin-right: 0.5rem;
+        padding-top: 8px;
+        padding-top: calc(16px - %s(icon-size)s / 2);
+        width: 16px;
+        width: %s(icon-size)s;
+      }
+
+      #entries li img ~ p {
+        margin-left: calc(16px + 0.5rem);
+        margin-left: calc(%s(icon-size)s + 0.5rem);
+      }
+
+      #entries li .subtext {
+        font-size: 85%;
+        color: rgba(%(color)s,0.6);
+      }
+
       #entries li .hl {
         background-color: #555;
         background-color: rgb(%(entries-hl-background-color)s);
@@ -218,66 +244,73 @@
 
     <div id="entries-box">
       <ul id="entries">
-        <li>Entry <span class="hl">highlight</span>ed</li>
-        <li class="selected">Other entry <span class="hl">highlight</span>ed</li>
-        <li class="selected">Other entry <span class="hl">highlight</span>ed</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
-        <li>Normal entry</li>
+        <li><p>Entry <span class="hl">highlight</span>ed</p></li>
+        <li class="selected"><p>Other entry <span class="hl">highlight</span>ed</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Entry <span>highlight</span>ed</p><p class="subtext">With subtext</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p><p class="subtext">With subtext</p></li>
+        <li><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAGv
+AAABrwGMBXQ6AAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48
+GgAAAB1JREFUOI1j/M/A8J+BAsBEieZRA0YNGDVgMBkAAFhtAh6Zl924AAAA
+AElFTkSuQmCC" /><p>Normal entry</p></li>
+        <li><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAGv
+AAABrwGMBXQ6AAAAGXRFWHRTb2Z0d2FyZQB3d3cuaW5rc2NhcGUub3Jnm+48
+GgAAAB1JREFUOI1j/M/A8J+BAsBEieZRA0YNGDVgMBkAAFhtAh6Zl924AAAA
+AElFTkSuQmCC" /><p>Entry <span>highlight</span>ed</p><p class="subtext">With subtext</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
+        <li><p>Normal entry</p></li>
       </ul>
 
       <div id="scrollbar"><div class="track"><div class="thumb"></div></div></div>

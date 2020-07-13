@@ -411,7 +411,7 @@ class Menu(QObject):
     def getSelected(self):
         items = self.results
         if items:
-            return items[min(self._index, len(items) - 1)].value.strip()
+            return items[min(self._index, len(items) - 1)].term.value.strip()
         return ''
 
     @pyqtSlot()

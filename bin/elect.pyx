@@ -296,11 +296,16 @@ cdef class Term(object):
     cdef public int id
     cdef public str value
     cdef public int length
+    cdef public dict data
 
-    def __cinit__(self, int id, str value not None):
+    def __cinit__(self, int id, str value not None, dict data = {}):
         self.id = id
         self.value = unicodedata.normalize('NFKD', value)
         self.length = len(value)
+        self.data = data
+
+    cdef asdict(self):
+        return dict(id=self.id, value=self.value, data=self.data)
 
 
 cdef class Match:
@@ -317,27 +322,23 @@ cdef class Match:
 
 cdef class CompositeMatch(object):
     cdef public Term term
-    cdef public int id
-    cdef public str value
     cdef public tuple rank
     cdef tuple _matches
 
     def __cinit__(self, Term term not None, tuple matches not None):
         self.term = term
-        self.id = term.id
-        self.value = term.value
         self.rank = (sum(m.length for m in matches), len(term.value), term.id)
         self._matches = matches
 
     def asdict(self):
-        return dict(id=self.id, value=self.value,
-                    rank=self.rank, partitions=self.partitions)
+        return dict(rank=self.rank, partitions=self.partitions,
+                    **self.term.asdict())
 
     @property
     def partitions(self):
         partitions = []
         last_end = 0
-        value = self.value
+        value = self.term.value
 
         for start, end in sorted(self._spans()):
             partitions.append(dict(
