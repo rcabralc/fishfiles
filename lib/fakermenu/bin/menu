@@ -19,22 +19,27 @@ generators = {
     n = Time.now
     Time.new(n.year - 18, n.month, n.day).-(80*356.25*24*3600*rand).strftime('%d/%m/%Y')
   end,
+  'Book author' => -> { Faker::Book.author },
+  'Book title' => -> { Faker::Book.title },
   'CEP' => -> { "#{(1e5*rand).to_i.to_s.rjust(5, '0')}-#{(1000*rand).to_i.to_s.rjust(3, '0')}" },
+  'Chuck Norris fact' => -> { Faker::ChuckNorris.fact },
   'CNPJ' => -> { Faker::CNPJ.numeric },
+  'Company name' => -> { Faker::Company.name },
   'CPF' => -> { Faker::CPF.numeric },
   'Digitable line' => -> { InvoiceCode.new.to_s },
-  'Game of Thrones city' => -> { Faker::GameOfThrones.city },
-  'Game of Thrones dragon' => -> { Faker::GameOfThrones.dragon },
-  'Game of Thrones house' => -> { Faker::GameOfThrones.house },
-  'Game of Thrones quote' => -> { Faker::GameOfThrones.quote },
-  'Game of Thrones' => -> { Faker::GameOfThrones.character },
+  'Fillmurray image' => -> { Faker::Fillmurray.image },
+  'Food dish' => -> { Faker::Food.dish },
+  'Funny name' => -> { Faker::FunnyName.name },
+  'Greek philosophers name' => -> { Faker::GreekPhilosophers.name },
+  'Greek philosophers quote' => -> { Faker::GreekPhilosophers.quote },
+  'IMEI' => -> { Faker::Code.imei },
+  'ISBN' => -> { Faker::Code.isbn },
   'Mobile phone' => -> { '11' + %w(6 7 8 9).sample + (1e8*rand).to_i.to_s.rjust(7, '0') },
   'Money' => -> { (1e6*rand).to_i.to_s + ',00' },
-  'Phone' => -> { '11' + %w(1 2 3 4 5).sample + (1e7*rand).to_i.to_s.rjust(7, '0') },
-  'Pokemon location' => -> { Faker::Pokemon.location },
-  'Pokemon move' => -> { Faker::Pokemon.move },
-  'Pokemon' => -> { Faker::Pokemon.name },
-  'Rock band' => -> { Faker::RockBand.name }
+  'Movie quote' => -> { Faker::Movie.quote },
+  'Movie title' => -> { Faker::Movie.title },
+  'Name' => -> { Faker::Name.name },
+  'Phone' => -> { '11' + %w(1 2 3 4 5).sample + (1e7*rand).to_i.to_s.rjust(7, '0') }
 }
 
 class InvoiceCode
