@@ -10,14 +10,21 @@
 
 #cython: language_level=3
 
-import functools
 import operator
 import re
 import sre_constants
 import sys
 import unicodedata
 
-from cython.view cimport array
+from cython.view cimport array as carray
+
+
+INT_SIZE = sizeof(int)
+
+# Stuff used for fuzzy matching.
+cdef int MIN_SCORE = -2**31 + 1 # make room for subtracting 1 without overflow
+cdef int CONSECUTIVE_SCORE = 5
+cdef int WORD_START_SCORE = 5
 
 
 class Pattern(object):
@@ -50,7 +57,7 @@ class SmartCasePattern(Pattern):
     def __init__(self, pattern):
         super(SmartCasePattern, self).__init__(pattern)
 
-        pattern_lower = self.value.casefold()
+        pattern_lower = self.value.lower()
 
         if pattern_lower != pattern:
             self.value = pattern
@@ -65,11 +72,11 @@ class ExactPattern(SmartCasePattern):
 
     def best_match(self, term):
         if not self.length:
-            return Match(term, [])
+            return Match(0, ())
 
         value = term.value
         if self.ignore_case:
-            value = value.casefold()
+            value = value.lower()
 
         if self.value not in value:
             return
@@ -80,7 +87,7 @@ class ExactPattern(SmartCasePattern):
         for index in range(current, current + self.length):
             indices.append(index)
 
-        return Match(term, indices)
+        return Match(indices[len(indices) - 1] - indices[0], tuple(indices))
 
 
 cdef class FuzzyPattern(object):
@@ -93,17 +100,17 @@ cdef class FuzzyPattern(object):
     def __init__(self, str pattern):
         cdef str pattern_lower
 
-        self.value = unicodedata.normalize('NFKD', pattern)
+        value = unicodedata.normalize('NFKD', pattern)
 
-        if pattern:
-            self.length = len(pattern)
+        if value:
+            self.length = len(value)
         else:
             self.length = 0
 
-        pattern_lower = pattern.casefold()
+        pattern_lower = value.lower()
 
-        if pattern_lower != pattern:
-            self.value = pattern
+        if pattern_lower != value:
+            self.value = value
             self.ignore_case = False
         else:
             self.value = pattern_lower
@@ -125,89 +132,112 @@ cdef class FuzzyPattern(object):
 
     __nonzero__ = __bool__
 
+    # Fuzzy matching largely inspired by fzy.
+    # https://github.com/jhawthorn/fzy
+    # Using different weights for matching and a different strategy for
+    # backtracking.
     cdef Match best_match(self, Term term):
-        cdef int pi, vi
-        cdef str value, pattern
-        cdef list indices
-        cdef int[:] lengths, match_lengths
-        cdef int[:,:] m
-
         cdef int p_length = self.length
 
-        if not p_length:
-            return Match(term, [])
+        if p_length == 0:
+            return Match(0, ())
 
         cdef int v_length = term.length
-        cdef int max_best_length = v_length + 1
-        cdef int best_length = 0
-        cdef int match_length
         cdef int r_limit = v_length - p_length + 1
         cdef int l_limit = 0
+        cdef int pi, vi, prev_vi, score, best_score = MIN_SCORE, best_idx
+        cdef int prev_score, last_match_score, match_score
+        cdef str value, pattern, original_value
+        cdef Py_UCS4 p
+        cdef int[:,:,:] m
 
-        value = term.value
-        if self.ignore_case:
-            value = value.casefold()
+        original_value = term.value
+        value = term.civalue if self.ignore_case else original_value
         pattern = self.value
 
-        m = array(shape=(p_length, v_length),
-                  itemsize=sizeof(int),
-                  format='i')
+        # m[X, Y, Z] stores the matching results
+        # X = 0:1, 0 = best score, 1 = score if ending in the position
+        # Y = 0:p_length-1, Z = 0:v_length-1 are the matrices of scores
+        # in X=0, Z = v_length the first match index is stored for later
+        # backtracking.
+        # in X=1, Z = v_length, the best score index is stored, useful to jump
+        # to the best score when backtracking.
+        m = carray(shape=(2, p_length, v_length + 1),
+                   itemsize=INT_SIZE,
+                   format='i')
 
         for pi in range(p_length):
-            lengths = m[pi]
             p = pattern[pi]
-            best_length = max_best_length
+            prev_score = best_score = MIN_SCORE
             for vi in range(l_limit, r_limit):
                 if value[vi] == p:
-                    # A match.
-                    # If we didn't find a match for `p` so far, bump `l_limit`
-                    # to `vi`, as there's no point checking past of it.  Note
-                    # that it'll be increased by one in the end of the outer
-                    # loop.
-                    if best_length == max_best_length: l_limit = vi
+                    prev_vi = vi - 1
+                    # Record start index and bump l_limit.
+                    if best_score == MIN_SCORE:
+                        m[0, pi, v_length] = l_limit = vi
+                    if (
+                        # word delimiters
+                        vi == 0 or value[prev_vi] in '._-/ ' or
+                        # uppercase following lowercase, like 'w' in 'thisWord'
+                        (original_value[vi].isupper() and
+                         original_value[prev_vi].islower())
+                    ):
+                        score = WORD_START_SCORE
+                    else:
+                        score = 1
+                    if pi != 0:
+                        last_match_score = m[1, pi - 1, prev_vi]
+                        score += m[0, pi - 1, prev_vi]
+                        if last_match_score + CONSECUTIVE_SCORE > score:
+                            score = last_match_score + CONSECUTIVE_SCORE
+                else:
+                    if best_score == MIN_SCORE: continue
+                    score = MIN_SCORE
 
-                    # Add new match from increased length of previous match.
-                    # If `pi` is zero `match_lengths` is not initialized, but
-                    # we can fallback to 1.  Once we improve `best_length`
-                    # below, `match_lengths` will be initialized, otherwise
-                    # this method will just return.
-                    match_length = match_lengths[vi - 1] + 1 if pi else 1
-                    lengths[vi] = match_length
-                    if match_length < best_length:
-                        best_length = match_length
-                elif best_length != max_best_length:
-                    # Otherwise, if we already found a match for `p`
-                    # (`best_length` for this `p` is not the maximum), just
-                    # increase length from the previous iteration.  In this
-                    # case, we know `vi - 1` is not out-of-bounds because we
-                    # must have completed at least one iteration.
-                    lengths[vi] = lengths[vi - 1] + 1
-                # Otherwise, continue looping until the first match for `p` is
-                # found.
-
-            # If we didn't lower `best_length`, we failed to find a match for
+                m[1, pi, vi] = score
+                if prev_score - 1 > score:
+                    score = prev_score - 1
+                m[0, pi, vi] = prev_score = score
+                if score >= best_score: # >= because we want rightmost best.
+                    m[1, pi, v_length] = vi
+                    best_score = score
+            # If we didn't improve best score, we failed to find a match for
             # `p`.
-            if best_length == max_best_length: return
-            match_lengths = lengths
+            if best_score == MIN_SCORE: return
             r_limit += 1
             l_limit += 1
 
-        pi = p_length - 1
-        p = pattern[pi]
-        indices = []
-        for vi in range(v_length - 1, -1, -1):
-            # The last row of lengths might contain lengths greater than the
-            # best, so we just skip them.  We skip also when we're not in a
-            # match.
-            if m[pi, vi] > best_length or p != value[vi]: continue
-            # We're in a match.
-            indices.insert(0, vi)
-            # Break if we tested all pattern chars.
-            if pi == 0: break
-            pi -= 1
+        match_score = best_score
+        indices = [0] * p_length
+        best_idx = m[1, p_length - 1, v_length]
+        indices[p_length - 1] = best_idx
+        for pi in range(p_length - 2, -1, -1):
             p = pattern[pi]
+            vi = best_idx - 1
+            # Prefer to show a consecutive match if the score ending here is
+            # the same as if it were not a match.  The final resulting score
+            # would have been the same.
+            if p == value[vi] and m[1, pi, vi] == m[0, pi, vi]:
+                indices[pi] = best_idx = vi
+                continue
+            # Jump to the best score index if possible.
+            if m[1, pi, v_length] < best_idx:
+                indices[pi] = best_idx = m[1, pi, v_length]
+                continue
+            # Look for the best index, stop looking if score starts decreasing.
+            # Might not find the best perfect match, as there are multiple
+            # possible ways, but stopping early won't hurt.
+            best_score = MIN_SCORE
+            # Check only until start index, because after that numbers weren't
+            # initialized.
+            for vi in range(vi, m[0, pi, v_length] - 1, -1):
+                score = m[0, pi, vi]
+                if score <= best_score: break
+                best_score = score
+                best_idx = vi
+            indices[pi] = best_idx
 
-        return Match(term, indices)
+        return Match(-match_score, tuple(indices))
 
 
 class InverseExactPattern(ExactPattern):
@@ -215,16 +245,16 @@ class InverseExactPattern(ExactPattern):
 
     def best_match(self, term):
         if not self.length:
-            return Match(term, [])
+            return Match(0, ())
 
         value = term.value
         if self.ignore_case:
-            value = value.casefold()
+            value = value.lower()
 
         if self.value in value:
             return
 
-        return Match(term, [])
+        return Match(0, ())
 
 
 class RegexPattern(Pattern):
@@ -245,12 +275,13 @@ class RegexPattern(Pattern):
 
     def best_match(self, term):
         if not self._can_match:
-            return Match(term, [])
+            return Match(0, ())
 
         value = term.value
         match = self._re.search(value)
         if match is not None:
-            return Match(term, list(range(*match.span())))
+            indices = tuple(range(*match.span()))
+            return Match(indices[len(indices) - 1] - indices[0], indices)
 
         return
 
@@ -295,12 +326,15 @@ cdef class CompositePattern(object):
 cdef class Term(object):
     cdef public int id
     cdef public str value
+    cdef public str civalue
     cdef public int length
     cdef public dict data
 
     def __cinit__(self, int id, str value not None, dict data = {}):
         self.id = id
-        self.value = unicodedata.normalize('NFKD', value)
+        value = unicodedata.normalize('NFKD', value)
+        self.value = value
+        self.civalue = value.lower()
         self.length = len(value)
         self.data = data
 
@@ -309,15 +343,12 @@ cdef class Term(object):
 
 
 cdef class Match:
-    cdef public int length
+    cdef public int rank
     cdef public tuple indices
 
-    def __cinit__(self, Term term not None, list indices not None):
-        if indices:
-            self.length = indices[len(indices) - 1] - indices[0] + 1
-        else:
-            self.length = term.length
-        self.indices = tuple(indices)
+    def __cinit__(self, int rank, tuple indices not None):
+        self.rank = rank
+        self.indices = indices
 
 
 cdef class CompositeMatch(object):
@@ -327,7 +358,7 @@ cdef class CompositeMatch(object):
 
     def __cinit__(self, Term term not None, tuple matches not None):
         self.term = term
-        self.rank = (sum(m.length for m in matches), len(term.value), term.id)
+        self.rank = (*[m.rank for m in matches], len(term.value), term.id)
         self._matches = matches
 
     def asdict(self):
@@ -336,61 +367,66 @@ cdef class CompositeMatch(object):
 
     @property
     def partitions(self):
-        partitions = []
-        last_end = 0
-        value = self.term.value
+        return self._partitions(self._matches)
 
-        for start, end in sorted(self._spans()):
-            partitions.append(dict(
-                unmatched=value[last_end:start],
-                matched=value[start:end]
-            ))
-            last_end = end
+    def _partitions(self, tuple matches not None):
+        cdef Match first_match
+        cdef list indices
+        cdef int length = len(matches)
+
+        if length == 0:
+            return [dict(unmatched=self.term.value, matched='')]
+
+        if length == 1:
+            chunks = Chunks(matches[0].indices)
+        else:
+            first_match, *other_matches = self._matches
+            indices = list(first_match.indices)
+            for match in other_matches:
+                indices.extend(match.indices)
+            chunks = Chunks(tuple(sorted(set(indices))))
+        return [dict(unmatched=unmatched, matched=matched)
+                for unmatched, matched in chunks.items(self.term.value)]
+
+
+cdef class Chunks:
+    cdef list _chunks
+
+    def __cinit__(self, tuple indices not None):
+        cdef int head
+        cdef tuple tail
+        cdef list chunks, chunk
+        cdef int i
+
+        if len(indices):
+            head = indices[0]
+            tail = indices[1:]
+            chunk = [head, head + 1]
+            chunks = [chunk]
+            for i in range(len(tail)):
+                t = tail[i]
+                if t != chunk[1]:
+                    chunk = [t, t + 1]
+                    chunks.append(chunk)
+                else:
+                    chunk[1] = t + 1
+            self._chunks = chunks
+        else:
+            self._chunks = None
+
+    def items(self, str value not None):
+        cdef int last_end = 0, i
+        cdef list slice
+
+        if self._chunks is not None:
+            for i in range(len(self._chunks)):
+                slice = self._chunks[i]
+                yield value[last_end:slice[0]], value[slice[0]:slice[1]]
+                last_end = slice[1]
 
         remainder = value[last_end:]
-
         if remainder:
-            partitions.append(dict(unmatched=remainder, matched=''))
-
-        return partitions
-
-    def _spans(self):
-        if not self._matches:
-            return
-
-        streaks = functools.reduce(
-            lambda acc, streaks: acc.merge(streaks),
-            (Streaks(m.indices) for m in self._matches)
-        )
-        for start, end in streaks:
-            yield (start, end)
-
-
-class Streaks(object):
-    def __init__(self, indices):
-        self.indices = frozenset(indices)
-
-    def __iter__(self):
-        if not self.indices:
-            return
-
-        indices = sorted(self.indices)
-
-        (head,), tail = indices[0:1], indices[1:]
-        chunks = [[head]]
-        (chunk,) = chunks
-        for i in tail:
-            if i == chunk[len(chunk) - 1] + 1:
-                chunk.append(i)
-            else:
-                chunk = [i]
-                chunks.append(chunk)
-
-        for chunk in chunks:
-            yield chunk[0], chunk[len(chunk) - 1] + 1
-
-    def merge(self, other):
-        return type(self)(self.indices.union(other.indices))
+            yield remainder, ''
 
 
 class Contest(object):
