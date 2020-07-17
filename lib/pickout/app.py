@@ -511,12 +511,8 @@ class MainView(QWebView):
         centerPoint = desktop.screenGeometry(screen).center()
         frameGeometry.moveCenter(centerPoint)
         self.move(frameGeometry.topLeft())
-
-        if title is not None:
-            self.setWindowTitle(title)
-
+        self.setWindowTitle(title or 'pickout')
         self.activateWindow()
-
         return self.showNormal()
 
 
