@@ -70,11 +70,11 @@ class SmartCasePattern(Pattern):
 class ExactPattern(SmartCasePattern):
     prefix = '@='
 
-    def best_match(self, term):
+    def best_match(self, entry):
         if not self.length:
             return Match(0, ())
 
-        value = term.value
+        value = entry.value
         if self.ignore_case:
             value = value.lower()
 
@@ -136,13 +136,13 @@ cdef class FuzzyPattern(object):
     # https://github.com/jhawthorn/fzy
     # Using different weights for matching and a different strategy for
     # backtracking.
-    cdef Match best_match(self, Term term):
+    cdef Match best_match(self, Entry entry):
         cdef int p_length = self.length
 
         if p_length == 0:
             return Match(0, ())
 
-        cdef int v_length = term.length
+        cdef int v_length = entry.length
         cdef int r_limit = v_length - p_length + 1
         cdef int l_limit = 0
         cdef int pi, vi, prev_vi, score, best_score = MIN_SCORE, best_idx
@@ -151,8 +151,8 @@ cdef class FuzzyPattern(object):
         cdef Py_UCS4 p
         cdef int[:,:,:] m
 
-        original_value = term.value
-        value = term.civalue if self.ignore_case else original_value
+        original_value = entry.value
+        value = entry.civalue if self.ignore_case else original_value
         pattern = self.value
 
         # m[X, Y, Z] stores the matching results
@@ -243,11 +243,11 @@ cdef class FuzzyPattern(object):
 class InverseExactPattern(ExactPattern):
     prefix = '@!'
 
-    def best_match(self, term):
+    def best_match(self, entry):
         if not self.length:
             return Match(0, ())
 
-        value = term.value
+        value = entry.value
         if self.ignore_case:
             value = value.lower()
 
@@ -273,11 +273,11 @@ class RegexPattern(Pattern):
                     raise
                 self._can_match = False
 
-    def best_match(self, term):
+    def best_match(self, entry):
         if not self._can_match:
             return Match(0, ())
 
-        value = term.value
+        value = entry.value
         match = self._re.search(value)
         if match is not None:
             indices = tuple(range(*match.span()))
@@ -299,13 +299,13 @@ cdef class CompositePattern(object):
             else:
                 self._patterns.append(p)
 
-    cdef CompositeMatch match(self, Term term):
+    cdef CompositeMatch match(self, Entry entry):
         cdef Match best_match
         cdef FuzzyPattern fuzzy_pattern
         cdef list matches = []
 
         for fuzzy_pattern in self._fuzzy_patterns:
-            best_match = fuzzy_pattern.best_match(term)
+            best_match = fuzzy_pattern.best_match(entry)
 
             if best_match is None:
                 return
@@ -313,17 +313,17 @@ cdef class CompositePattern(object):
             matches.append(best_match)
 
         for pattern in self._patterns:
-            best_match = pattern.best_match(term)
+            best_match = pattern.best_match(entry)
 
             if best_match is None:
                 return
 
             matches.append(best_match)
 
-        return CompositeMatch(term, tuple(matches))
+        return CompositeMatch(entry, tuple(matches))
 
 
-cdef class Term(object):
+cdef class Entry(object):
     cdef public int id
     cdef public str value
     cdef public str civalue
@@ -352,18 +352,18 @@ cdef class Match:
 
 
 cdef class CompositeMatch(object):
-    cdef public Term term
+    cdef public Entry entry
     cdef public tuple rank
     cdef tuple _matches
 
-    def __cinit__(self, Term term not None, tuple matches not None):
-        self.term = term
-        self.rank = (*[m.rank for m in matches], len(term.value), term.id)
+    def __cinit__(self, Entry entry not None, tuple matches not None):
+        self.entry = entry
+        self.rank = (*[m.rank for m in matches], len(entry.value), entry.id)
         self._matches = matches
 
     def asdict(self):
         return dict(rank=self.rank, partitions=self.partitions,
-                    **self.term.asdict())
+                    **self.entry.asdict())
 
     @property
     def partitions(self):
@@ -375,7 +375,7 @@ cdef class CompositeMatch(object):
         cdef int length = len(matches)
 
         if length == 0:
-            return [dict(unmatched=self.term.value, matched='')]
+            return [dict(unmatched=self.entry.value, matched='')]
 
         if length == 1:
             chunks = Chunks(matches[0].indices)
@@ -386,7 +386,7 @@ cdef class CompositeMatch(object):
                 indices.extend(match.indices)
             chunks = Chunks(tuple(sorted(set(indices))))
         return [dict(unmatched=unmatched, matched=matched)
-                for unmatched, matched in chunks.items(self.term.value)]
+                for unmatched, matched in chunks.items(self.entry.value)]
 
 
 cdef class Chunks:
@@ -433,12 +433,12 @@ class Contest(object):
     def __init__(self, *patterns):
         self.pattern = CompositePattern(list(patterns))
 
-    def elect(self, terms not None, **kw):
-        cdef Term t
+    def elect(self, entries not None, **kw):
+        cdef Entry t
         cdef CompositeMatch m
         cdef CompositePattern p = self.pattern
         cdef list matches = []
-        for t in terms:
+        for t in entries:
             m = p.match(t)
             if m is not None:
                 matches.append(m)
@@ -483,9 +483,9 @@ def make_pattern(pattern):
     return FuzzyPattern(pattern)
 
 
-def filter_terms(terms, *patterns, **options):
+def filter_entries(entries, *patterns, **options):
     patterns = [make_pattern(p) for p in patterns]
-    return Contest(*patterns).elect(terms, **options)
+    return Contest(*patterns).elect(entries, **options)
 
 
 def sort_matches(matches, **options):

@@ -12,10 +12,10 @@ import sys
 
 MAX_HISTORY_ENTRIES = 100
 
-Term = elect.Term
+Entry = elect.Entry
 
 
-def filter(terms, pat, **options):
+def filter(entries, pat, **options):
     if ' ' not in pat and '\\' not in pat:
         # Optimization for the common case of a single pattern:  Don't parse
         # it, since it doesn't contain any special character.
@@ -63,7 +63,7 @@ def filter(terms, pat, **options):
 
         patterns = [''.join(p) for p in patterns if p]
 
-    return incremental_filter(terms, patterns, **options)
+    return incremental_filter(entries, patterns, **options)
 
 
 class Pattern:
@@ -100,18 +100,18 @@ def wrap_pattern(elect_pattern):
     return NonIncrementalPattern(elect_pattern)
 
 
-def incremental_filter(terms, pattern_strings, debug=False, **options):
+def incremental_filter(entries, pattern_strings, debug=False, **options):
     patterns = [wrap_pattern(elect.make_pattern(p))
                 for p in pattern_strings]
 
     def full_filter(items):
-        return elect.filter_terms(items, *[p.inner for p in patterns],
-                                  **options)
+        return elect.filter_entries(items, *[p.inner for p in patterns],
+                                    **options)
 
     non_incremental_patterns = [p for p in patterns
                                 if not isinstance(p, IncrementalPattern)]
     if non_incremental_patterns or not patterns:
-        return full_filter(terms)
+        return full_filter(entries)
 
     def candidates_from_cache(patterns):
         def best_possible_patterns(patterns):
@@ -134,10 +134,10 @@ def incremental_filter(terms, pattern_strings, debug=False, **options):
                 # There was at least one partial hit for one pattern, so
                 # cached, even if empty, is the result of some previous
                 # filtering.
-                return full_filter(r.term for r in cached)
+                return full_filter(r.entry for r in cached)
 
         # No hit for these patterns.
-        return full_filter(terms)
+        return full_filter(entries)
 
     def update_candidates_from_cache(patterns, matches):
         incremental_cache.update(patterns, matches, debug=debug)
@@ -330,7 +330,7 @@ class Menu(QObject):
         incremental_cache.clear()
         self._frontend = frontend
 
-        self._all_terms = [Term(i, c) for i, c in enumerate(items) if keep(c)]
+        self._all_entries = [Entry(i, c) for i, c in enumerate(items) if keep(c)]
         self._history = History.build(self._history_path, history_key)
         self._total_items = len(items)
         self._limit = limit
@@ -349,7 +349,7 @@ class Menu(QObject):
         value = value or ''
         if self._input != value:
             self._input = value
-            self.results = filter(self._all_terms, value,
+            self.results = filter(self._all_entries, value,
                                   incremental=True, debug=self._debug)
 
     @property
@@ -411,7 +411,7 @@ class Menu(QObject):
     def getSelected(self):
         items = self.results
         if items:
-            return items[min(self._index, len(items) - 1)].term.value.strip()
+            return items[min(self._index, len(items) - 1)].entry.value.strip()
         return ''
 
     @pyqtSlot()
@@ -478,7 +478,7 @@ class Menu(QObject):
     def _values_for_completion(self):
         sw = str.startswith
         input = self.input
-        return (t.value for t in self._all_terms if sw(t.value, input))
+        return (t.value for t in self._all_entries if sw(t.value, input))
 
     def _values_until_next_sep(self, values, from_index):
         sep = self._completion_sep
@@ -693,13 +693,13 @@ class IncrementalCache(object):
 
         best_patterns = set()
         matches = set()
-        for t, best, cached in self._get_terms(patterns, default, debug):
+        for t, best, cached in self._get_entries(patterns, default, debug):
             best_patterns.add((t, best))
             matches.update(cached)
 
         return (best_patterns, matches)
 
-    def _get_terms(self, patterns, default, debug):
+    def _get_entries(self, patterns, default, debug):
         for pattern_type, patterns in self._group_types(patterns):
             best_pattern, cached = self._cache[pattern_type].find(
                 patterns, default=default, debug=debug

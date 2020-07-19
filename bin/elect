@@ -93,7 +93,7 @@ import sys
 
 def build_line(result, highlight=True):
     if not highlight:
-        return result.term.value
+        return result.entry.value
 
     line = []
 
@@ -131,8 +131,8 @@ def main():
 
     strip = str.strip
     entries = (strip(line) for line in iter(sys.stdin.readline, ''))
-    terms = (elect.Term(i, c) for i, c in enumerate(entries, start=1) if c)
-    results = elect.filter_terms(terms, *patterns, **options)
+    entries = (elect.Entry(i, c) for i, c in enumerate(entries, start=1) if c)
+    results = elect.filter_entries(entries, *patterns, **options)
 
     for result in results:
         if args['--output-json']:
