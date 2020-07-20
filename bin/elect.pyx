@@ -161,7 +161,7 @@ cdef class FuzzyPattern(object):
         # in X=0, Z = v_length the first match index is stored for later
         # backtracking.
         # in X=1, Z = v_length, the best score index is stored, useful to jump
-        # to the best score when backtracking.
+        # to the best score when starting backtracking.
         m = carray(shape=(2, p_length, v_length + 1),
                    itemsize=INT_SIZE,
                    format='i')
@@ -219,10 +219,6 @@ cdef class FuzzyPattern(object):
             # would have been the same.
             if p == value[vi] and m[1, pi, vi] == m[0, pi, vi]:
                 indices[pi] = best_idx = vi
-                continue
-            # Jump to the best score index if possible.
-            if m[1, pi, v_length] < best_idx:
-                indices[pi] = best_idx = m[1, pi, v_length]
                 continue
             # Look for the best index, stop looking if score starts decreasing.
             # Might not find the best perfect match, as there are multiple
