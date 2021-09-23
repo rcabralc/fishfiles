@@ -16,10 +16,8 @@ function ssh_agent --description 'launch the ssh-agent and add identities'
     for identity in (find ~/.ssh/ -name '*.pub' | sed 's/\.pub$//')
         set -l fingerprint (ssh-keygen -lf $identity | awk '{print $2}')
         ssh-add -l | grep -q $fingerprint
-            # pipe needed to remove terminal from ssh-add
-            or echo ignored | \
-                env SSH_ASKPASS=$HOME/.config/fish/bin/askpass DISPLAY= \
-                ssh-add $identity \
+            or pass show ssh/(basename $identity) | head -n 1 | \
+                setsid ssh-add $identity \
                 2>/dev/null
     end
 end
